@@ -51,6 +51,7 @@
             id: 'products',
             columns: [
                 column('id', 'ID'|trans),
+                column('image', ''),
                 column_html('ref_html', 'Reference'|trans, 'start', 'ref'),
                 column_html('title_html', 'Title'|trans, 'start', 'title'),
                 column_toggle('visible', 'Online'|trans, 'toggle_visible_url'),
@@ -72,14 +73,16 @@
             },
         }) }}
 
-        {{ component('BoPagination', {
-            route: 'admin.products.default',
-            currentPage: current_page,
-            lastPage: pages,
-            routeParams: { category_id: current_category > 0 ? current_category : null, q: current_search },
-            ariaLabel: 'Product pagination',
-            testid: 'product-pagination',
-        }) }}
+        <div class="mt-3">
+          {{ component('BoPagination', {
+              route: 'admin.products.default',
+              currentPage: current_page,
+              lastPage: pages,
+              routeParams: { category_id: current_category > 0 ? current_category : null, q: current_search },
+              ariaLabel: 'Product pagination',
+              testid: 'product-pagination',
+          }) }}
+        </div>
     </div>
 
     {{ safe_hook('products.bottom') }}

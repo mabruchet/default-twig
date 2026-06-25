@@ -23,6 +23,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductRelationsContext;
 use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
+use BackOfficeDefaultTwigBundle\Service\Product\ProductImage;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -80,6 +81,7 @@ final class ProductController
         private readonly CategoryRepository $categories,
         private readonly ProductRepository $productRepository,
         private readonly EditLocaleResolver $editLocale,
+        private readonly ProductImage $productImage,
     ) {
     }
 
@@ -567,6 +569,7 @@ final class ProductController
 
         return [
             'id' => $id,
+            'image' => $this->productImage->renderImage($product),
             'ref' => (string) $product->getRef(),
             'ref_html' => \sprintf(
                 '<a href="%s" class="text-decoration-none" data-testid="bo-product-ref-link">%s</a>',

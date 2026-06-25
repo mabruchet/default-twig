@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Service\Catalog;
 
 use BackOfficeDefaultTwigBundle\Repository\CategoryRepository;
 use BackOfficeDefaultTwigBundle\Repository\ProductRepository;
+use BackOfficeDefaultTwigBundle\Service\Product\ProductImage;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -24,6 +25,8 @@ use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\Category;
 use Thelia\Model\Product;
 use Thelia\Tools\TokenProvider;
+use TheliaLibrary\Service\ImagePluginService;
+use Thelia\Api\Service\DataAccess\DataAccessService;
 
 final readonly class CategoryListPresenter
 {
@@ -35,6 +38,9 @@ final readonly class CategoryListPresenter
         private UrlGeneratorInterface $urls,
         private TokenProvider $tokens,
         private TranslatorInterface $translator,
+        private readonly ImagePluginService $imagePluginService,
+        private readonly DataAccessService $dataAccessService,
+        private readonly ProductImage $productImageService,
     ) {
     }
 
@@ -121,6 +127,7 @@ final readonly class CategoryListPresenter
 
         return [
             'id' => $id,
+            'image' => $this->renderImage($category),
             'title_html' => $this->renderTitleLink($browseUrl, $title, $productCount, $childCount),
             'title' => $title,
             'visible' => (bool) $category->getVisible(),
@@ -152,6 +159,39 @@ final readonly class CategoryListPresenter
             htmlspecialchars($products, \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8'),
             htmlspecialchars($children, \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8'),
         );
+    }
+
+    private function renderImage(Category $category): string
+    {
+        $images =  $this->dataAccessService->resources(
+            '/api/admin/category_images',
+            [
+                'category.id' => $category->getId(),
+                'visible' => true,
+            ]
+        );
+
+        if (null === $images || 0 === \count($images)) {
+            return '';
+        }
+
+        return $this->imagePluginService->getImages([
+            'img_id' => $images[0]['id'],
+            'source_type' => 'category',
+            'filters' => 'default',
+            'wrapper' => 'figure',
+            'limit' => 1,
+            'visible' => true,
+            'wrapper_attrs' => [
+                'style' => 'width:50px;height:50px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin:-16px;',
+            ],
+            'img_attrs' => [
+                'loading' => 'lazy',
+                'width' => '50',
+                'height' => '50',
+                'style' => 'width:100%;height:100%;object-fit:contain;',
+            ],
+        ]);
     }
 
     /**
@@ -200,6 +240,7 @@ final readonly class CategoryListPresenter
 
         return [
             'id' => $id,
+            'image' => $this->productImageService->renderImage($product),
             'ref' => $ref,
             'title' => $title,
             'title_html' => \sprintf(

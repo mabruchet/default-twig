@@ -48,6 +48,7 @@
             id: 'categories',
             columns: [
                 column('id', 'ID'|trans),
+                column('image', ''),
                 column_html('title_html', 'Title'|trans),
                 column_toggle('visible', 'Online'|trans, 'toggle_visible_url'),
                 column('position', 'Position'|trans, 'center'),
@@ -85,6 +86,7 @@
                     id: 'category-products',
                     columns: [
                         column('id', 'ID'|trans),
+                        column('image', ''),
                         column('ref', 'Reference'|trans),
                         column_html('title_html', 'Title'|trans),
                         column_toggle('visible', 'Online'|trans, 'toggle_visible_url'),
