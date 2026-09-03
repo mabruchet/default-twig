@@ -42,6 +42,7 @@ final readonly class CustomerFilters
     public const TRISTATE_WITHOUT = 'without';
 
     public const KEY_NEWSLETTER = 'newsletter';
+    public const KEY_GUEST = 'guest';
     public const KEY_CREATED_RANGE = 'created_range';
     public const KEY_TOTAL_SPENT = 'total_spent';
     public const KEY_ORDER_COUNT = 'order_count';
@@ -65,6 +66,7 @@ final readonly class CustomerFilters
      */
     public function __construct(
         public ?bool $newsletter = null,
+        public ?bool $guest = null,
         public ?\DateTimeImmutable $createdFrom = null,
         public ?\DateTimeImmutable $createdTo = null,
         public ?float $minTotalSpent = null,
@@ -138,6 +140,7 @@ final readonly class CustomerFilters
 
         return new self(
             newsletter: self::parseTriStateBool((string) $query->get('newsletter', '')),
+            guest: self::parseTriStateBool((string) $query->get('guest', '')),
             createdFrom: $createdFrom,
             createdTo: $createdTo,
             minTotalSpent: $minTotalSpent,
@@ -158,6 +161,7 @@ final readonly class CustomerFilters
     public function isEmpty(): bool
     {
         return $this->newsletter === null
+            && $this->guest === null
             && $this->createdFrom === null
             && $this->createdTo === null
             && $this->minTotalSpent === null
@@ -179,6 +183,9 @@ final readonly class CustomerFilters
 
         if ($this->newsletter !== null) {
             $params['newsletter'] = $this->newsletter ? self::TRISTATE_WITH : self::TRISTATE_WITHOUT;
+        }
+        if ($this->guest !== null) {
+            $params['guest'] = $this->guest ? self::TRISTATE_WITH : self::TRISTATE_WITHOUT;
         }
         if ($this->createdFrom !== null) {
             $params['created_from'] = $this->createdFrom->format('Y-m-d');
@@ -244,6 +251,7 @@ final readonly class CustomerFilters
     {
         $overrides = match ($key) {
             self::KEY_NEWSLETTER => ['newsletter' => null],
+            self::KEY_GUEST => ['guest' => null],
             self::KEY_CREATED_RANGE, self::KEY_PERIOD => [
                 'createdFrom' => null,
                 'createdTo' => null,
@@ -279,6 +287,7 @@ final readonly class CustomerFilters
         }
 
         $this->applyNewsletter($query);
+        $this->applyGuest($query);
         $this->applyCountry($query);
         $this->applyPhone($query);
         $this->applyTotalSpentRange($query);
@@ -318,6 +327,17 @@ final readonly class CustomerFilters
             $clause.' (SELECT 1 FROM newsletter n WHERE n.email = '
                 .CustomerTableMap::COL_EMAIL.' AND n.unsubscribed = 0)'
         );
+    }
+
+    private function applyGuest(CustomerQuery $query): void
+    {
+        if ($this->guest === null) {
+            return;
+        }
+
+        // Direct column filter: is_guest lives on customer itself, unlike
+        // newsletter (a join by email) or country (a join through address).
+        $query->filterByIsGuest($this->guest ? 1 : 0);
     }
 
     private function applyCountry(CustomerQuery $query): void
@@ -391,6 +411,7 @@ final readonly class CustomerFilters
     {
         return new self(
             newsletter: \array_key_exists('newsletter', $overrides) ? $overrides['newsletter'] : $this->newsletter,
+            guest: \array_key_exists('guest', $overrides) ? $overrides['guest'] : $this->guest,
             createdFrom: \array_key_exists('createdFrom', $overrides) ? $overrides['createdFrom'] : $this->createdFrom,
             createdTo: \array_key_exists('createdTo', $overrides) ? $overrides['createdTo'] : $this->createdTo,
             minTotalSpent: \array_key_exists('minTotalSpent', $overrides) ? $overrides['minTotalSpent'] : $this->minTotalSpent,

@@ -1,0 +1,7 @@
+# base.html.twig renders its assets through encore_entry_*_tags(..., 'backoffice'):
+# the named build has to exist, and it points at this package's own dist/ output
+# (npm run build). Auto-imported by BackOfficeDefaultTwigBundle::prependExtension().
+webpack_encore:
+    output_path: false
+    builds:
+        backoffice: "%kernel.project_dir%/templates/backOffice/default-twig/dist"

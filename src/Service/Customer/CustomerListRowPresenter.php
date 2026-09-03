@@ -71,6 +71,7 @@ final readonly class CustomerListRowPresenter
             'last_order_html' => $this->renderLastOrder($lastOrderAt),
             'created_html' => $this->renderCreatedAt($createdAt),
             'newsletter_html' => $this->renderNewsletter($newsletterSubscribed),
+            'guest_html' => $this->renderGuest($customer->isGuest()),
             'firstname' => $firstname,
             'lastname' => $lastname,
             'email' => $email,
@@ -212,6 +213,26 @@ final readonly class CustomerListRowPresenter
 
         return \sprintf(
             '<span class="badge text-bg-light text-muted bo-customer-newsletter" data-bs-toggle="tooltip" title="%s"><i class="bi bi-envelope-slash" aria-hidden="true"></i></span>',
+            htmlspecialchars($tooltip),
+        );
+    }
+
+    private function renderGuest(bool $isGuest): string
+    {
+        if ($isGuest) {
+            $tooltip = $this->translator->trans('Ordered without creating an account');
+
+            return \sprintf(
+                '<span class="badge text-bg-warning-subtle text-warning-emphasis bo-customer-guest" data-bs-toggle="tooltip" title="%s"><i class="bi bi-person-vcard" aria-hidden="true"></i> %s</span>',
+                htmlspecialchars($tooltip),
+                htmlspecialchars($this->translator->trans('Guest')),
+            );
+        }
+
+        $tooltip = $this->translator->trans('Registered account');
+
+        return \sprintf(
+            '<span class="badge text-bg-light text-muted bo-customer-guest" data-bs-toggle="tooltip" title="%s"><i class="bi bi-person-check" aria-hidden="true"></i></span>',
             htmlspecialchars($tooltip),
         );
     }

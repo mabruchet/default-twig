@@ -57,11 +57,13 @@ final readonly class CustomerFilterPresenter
             'title_options' => $titles,
             'tristate_options' => $this->tristateOptions(),
             'newsletter_options' => $this->newsletterOptions(),
+            'guest_options' => $this->guestOptions(),
 
             'selected_country_id' => $filters->countryId,
             'selected_lang_ids' => $filters->langIds,
             'selected_title_ids' => $filters->titleIds,
             'newsletter_value' => $this->triStateValue($filters->newsletter),
+            'guest_value' => $this->triStateValue($filters->guest),
 
             'created_from_input' => $filters->createdFrom?->format('Y-m-d') ?? '',
             'created_to_input' => $filters->createdTo?->format('Y-m-d') ?? '',
@@ -105,6 +107,17 @@ final readonly class CustomerFilterPresenter
                 $filters->newsletter
                     ? $this->translator->trans('Subscribed')
                     : $this->translator->trans('Unsubscribed'),
+            );
+        }
+
+        if ($filters->guest !== null) {
+            $chips[] = $this->chip(
+                $filters,
+                CustomerFilters::KEY_GUEST,
+                $this->translator->trans('Guest checkout'),
+                $filters->guest
+                    ? $this->translator->trans('Guest')
+                    : $this->translator->trans('Registered customer'),
             );
         }
 
@@ -329,11 +342,26 @@ final readonly class CustomerFilterPresenter
         ];
     }
 
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function guestOptions(): array
+    {
+        return [
+            ['value' => '', 'label' => $this->translator->trans('All')],
+            ['value' => CustomerFilters::TRISTATE_WITH, 'label' => $this->translator->trans('Guest')],
+            ['value' => CustomerFilters::TRISTATE_WITHOUT, 'label' => $this->translator->trans('Registered customer')],
+        ];
+    }
+
     private function countAdvancedFilters(CustomerFilters $filters): int
     {
         $count = 0;
 
         if ($filters->newsletter !== null) {
+            ++$count;
+        }
+        if ($filters->guest !== null) {
             ++$count;
         }
         if ($filters->createdFrom !== null || $filters->createdTo !== null) {
