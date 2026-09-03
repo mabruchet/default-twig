@@ -112,6 +112,13 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">{{ 'Checkout'|trans }}</div>
+                        <div class="card-body">
+                            {{ form_row(form.guest_checkout_mode, { attr: { 'data-testid': 'config-store-guest-checkout-mode' } }) }}
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -89,6 +89,22 @@
 
                     <div class="col-md-6 col-lg-4">
                         <fieldset>
+                            <legend class="form-label">{{ 'Guest checkout'|trans }}</legend>
+                            <div class="btn-group btn-group-sm w-100" role="group" aria-label="{{ 'Guest checkout'|trans }}">
+                                {% for option in filters.guest_options %}
+                                    {% set id = 'filter-guest-' ~ (option.value ?: 'all') %}
+                                    <input type="radio" class="btn-check" name="guest" id="{{ id }}"
+                                           value="{{ option.value }}"
+                                           {{ option.value == filters.guest_value ? 'checked' : '' }}
+                                           data-testid="customer-filter-guest-{{ option.value ?: 'all' }}">
+                                    <label class="btn btn-outline-secondary btn-sm" for="{{ id }}">{{ option.label }}</label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <fieldset>
                             <legend class="form-label">{{ 'Phone'|trans }}</legend>
                             <input type="search" name="phone" value="{{ filters.phone_input }}"
                                    class="form-control form-control-sm"
@@ -312,6 +328,7 @@
                     column_html('last_order_html', 'Last order'|trans, 'start'),
                     column_html('created_html', 'Registered on'|trans, 'start', 'created_at'),
                     column_html('newsletter_html', 'Newsletter'|trans, 'center'),
+                    column_html('guest_html', 'Account'|trans, 'center'),
                     column_actions('_actions', 'Actions'|trans),
                 ],
                 rows: rows,

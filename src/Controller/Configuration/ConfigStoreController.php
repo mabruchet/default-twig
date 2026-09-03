@@ -31,6 +31,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\Checkout\Enum\GuestCheckoutMode;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\CountryQuery;
 use Twig\Environment;
@@ -138,6 +139,7 @@ final class ConfigStoreController
             'store_zipcode' => ConfigQuery::read('store_zipcode'),
             'store_city' => ConfigQuery::read('store_city'),
             'store_country' => ConfigQuery::read('store_country'),
+            'guest_checkout_mode' => ConfigQuery::read('guest_checkout_mode', GuestCheckoutMode::Disabled->value),
         ];
     }
 

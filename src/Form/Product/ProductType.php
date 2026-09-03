@@ -106,6 +106,10 @@ final class ProductType extends AbstractType
                     'required' => false,
                     'label' => $this->translator->trans('Virtual document'),
                 ])
+                ->add('guest_checkout_forbidden', CheckboxType::class, [
+                    'required' => false,
+                    'label' => $this->translator->trans('Requires an account (no guest checkout)'),
+                ])
                 ->add('chapo', TextareaType::class, [
                     'required' => false,
                     'label' => $this->translator->trans('Summary'),

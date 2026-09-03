@@ -367,6 +367,7 @@ final class ProductController
             'template_id' => $product->getTemplateId(),
             'brand_id' => $product->getBrandId(),
             'virtual_document_id' => $this->currentVirtualDocumentId($product),
+            'guest_checkout_forbidden' => (bool) $product->getGuestCheckoutForbidden(),
         ], [
             'include_id' => true,
         ]);
@@ -409,8 +410,9 @@ final class ProductController
     private function updateEvent(FormInterface $validated): ProductUpdateEvent
     {
         $data = $validated->getData() ?? [];
+        $productId = (int) ($data['id'] ?? 0);
 
-        $event = new ProductUpdateEvent((int) ($data['id'] ?? 0));
+        $event = new ProductUpdateEvent($productId);
         $event
             ->setLocale((string) ($data['locale'] ?? $this->defaultLocale()))
             ->setRef((string) ($data['ref'] ?? ''))
@@ -425,7 +427,23 @@ final class ProductController
             ->setBrandId($this->intOrNull($data['brand_id'] ?? null))
             ->setVirtualDocumentId($this->intOrNull($data['virtual_document_id'] ?? null));
 
+        // ProductUpdateEvent carries no setter for this column: it is a Lot D
+        // addition and the event class is core, out of this bundle's scope.
+        // Persisted directly, ahead of the event dispatch that follows.
+        $this->persistGuestCheckoutForbidden($productId, (bool) ($data['guest_checkout_forbidden'] ?? false));
+
         return $event;
+    }
+
+    private function persistGuestCheckoutForbidden(int $productId, bool $forbidden): void
+    {
+        $product = ProductQuery::create()->findPk($productId);
+        if ($product === null) {
+            return;
+        }
+
+        $product->setGuestCheckoutForbidden((int) $forbidden);
+        $product->save();
     }
 
     private function seoEvent(FormInterface $validated): UpdateSeoEvent

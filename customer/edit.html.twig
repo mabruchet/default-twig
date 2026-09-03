@@ -21,6 +21,11 @@
             <h1 class="h3 mb-0" data-testid="customer-edit-title">
                 {{ 'Edit customer'|trans }}: <span class="text-muted">{{ customer.firstname }} {{ customer.lastname }}</span>
                 <small class="text-secondary ms-2">{{ customer.ref }}</small>
+                {% if customer.isGuest %}
+                    <span class="badge text-bg-warning-subtle text-warning-emphasis ms-2" data-testid="customer-edit-guest-badge">
+                        <i class="bi bi-person-vcard" aria-hidden="true"></i> {{ 'Ordered without creating an account'|trans }}
+                    </span>
+                {% endif %}
             </h1>
             {% include '@BackOfficeDefaultTwig/_prev_next_buttons.html.twig' with {
                 prev_url: prev_url|default(null),

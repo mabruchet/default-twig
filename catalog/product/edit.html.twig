@@ -127,6 +127,12 @@
                                 {{ form_widget(form.virtual, { attr: { class: 'form-check-input', 'data-bo-virtual-toggle-target': 'trigger', 'data-action': 'change->bo-virtual-toggle#update' } }) }}
                                 {{ form_label(form.virtual, null, { label_attr: { class: 'form-check-label' } }) }}
                             </div>
+                            {% if form.guest_checkout_forbidden is defined %}
+                                <div class="form-check mb-3">
+                                    {{ form_widget(form.guest_checkout_forbidden, { attr: { class: 'form-check-input', 'data-testid': 'product-edit-guest-checkout-forbidden' } }) }}
+                                    {{ form_label(form.guest_checkout_forbidden, null, { label_attr: { class: 'form-check-label' } }) }}
+                                </div>
+                            {% endif %}
                             <div class="mb-3">
                                 {{ form_label(form.default_category) }}
                                 <select name="{{ form.default_category.vars.full_name }}" class="form-select" data-testid="product-edit-category" required>

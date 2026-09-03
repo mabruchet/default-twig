@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Thelia package.
  * http://www.thelia.net
@@ -52,6 +54,7 @@ return [
     'Accepted formats' => 'Formats acceptés',
     'Access denied.' => 'Accès refusé.',
     'Accessory title' => 'Titre de l\'accessoire',
+    'Account' => 'Compte',
     'Actions' => 'Actions',
     'Activate' => 'Activer',
     'Activate logs only for these files' => 'Activer les journaux uniquement pour ces fichiers',
@@ -215,6 +218,7 @@ return [
     'Check activation' => 'Vérifier l\'activation',
     'Check modules' => 'Vérifier les modules',
     'Check the support of hooks.' => 'Vérifier le support des points d\'accroche',
+    'Checkout' => 'Tunnel de commande',
     'Choose a configuration' => 'Choisir une configuration',
     'Choose a country' => 'Choisissez un pays',
     'Choose a name for the new template (defaults to "Copy of <name>").' => 'Choisissez un nom pour le nouveau gabarit (par défaut « Copie de <name> »).',
@@ -431,6 +435,7 @@ return [
     'Did not found any text to translate.' => 'Aucun texte à traduire n\'a été trouvé.',
     'Different from' => 'Différent de',
     'Disabled' => 'Désactivé',
+    'Disabled — an account is always required to order' => 'Désactivé — un compte est toujours nécessaire pour commander',
     'Discount' => 'Remise',
     'Discount (%)' => 'Remise (%)',
     'Discount amount' => 'Montant de réduction',
@@ -582,6 +587,8 @@ return [
     'Emergency' => 'Urgence',
     'Enable SMTP delivery' => 'Activer l\'envoi via SMTP',
     'Enabled' => 'Activé',
+    'Enabled — any cart may be ordered without an account' => 'Activé — tout panier peut être commandé sans compte',
+    'Enabled, except for products that require an account' => 'Activé, sauf pour les produits nécessitant un compte',
     'Encryption' => 'Chiffrement',
     'End date' => 'Date de fin',
     'Enter one or more file names without path separated by ";". Use "!" before a file name to exclude it. Use "*" to activate logs for all files.' => 'Saisissez un ou plusieurs noms de fichier sans chemin, séparés par ";". Utilisez "!" devant un nom de fichier pour l\'exclure. Utilisez "*" pour activer les journaux pour tous les fichiers.',
@@ -653,6 +660,8 @@ return [
     'Grand total' => 'Total général',
     'Greater than' => 'Supérieur à',
     'Greater than or equal' => 'Supérieur ou égal à',
+    'Guest' => 'Invité',
+    'Guest checkout' => 'Commande sans compte',
     'Here, just drag and drop the available taxes in groups.' => 'Ici, glissez-déposez simplement les taxes disponibles dans les groupes.',
     'Hidden' => 'Masqué',
     'Hidden from the list' => 'Masqué dans la liste',
@@ -665,6 +674,7 @@ return [
     'Hook code' => 'Code du point d\'accroche',
     'Hook title' => 'Titre du point d\'accroche',
     'Hooks' => 'Points d\'accroche',
+    'How far a visitor can go without creating an account.' => 'Jusqu\'où un visiteur peut aller sans créer de compte.',
     'hour in hh:mm:ss format' => 'heure au format hh:mm:ss',
     'HTML layout file' => 'Fichier de mise en page HTML',
     'HTML message body' => 'Corps du message en HTML',
@@ -972,6 +982,7 @@ return [
     'Order statuses management' => 'Gestion des statuts de commande',
     'Order total with taxes' => 'Total commande TTC',
     'Ordered products' => 'Produits commandés',
+    'Ordered without creating an account' => 'Commande passée sans création de compte',
     'Orders' => 'Commandes',
     'Orders for this customer' => 'Commandes de ce client',
     'Orders management' => 'Gestion des commandes',
@@ -1094,7 +1105,9 @@ return [
     'Reference, name or email' => 'Référence, nom ou e-mail',
     'Refresh the active status of every sale according to its dates.' => 'Actualiser le statut actif de chaque promotion selon ses dates.',
     'Registered' => 'Inscription',
+    'Registered account' => 'Compte client',
     'Registered between' => 'Inscrits entre le',
+    'Registered customer' => 'Client inscrit',
     'Registered on' => 'Inscrit le',
     'Registered on %date' => 'Inscrit le %date',
     'Registration date' => 'Date d\'enregistrement',
@@ -1114,6 +1127,7 @@ return [
     'Replace current image by this file' => 'Remplacer l\'image actuelle par ce fichier',
     'Request a new link' => 'Demander un nouveau lien',
     'Required modules' => 'Modules requis',
+    'Requires an account (no guest checkout)' => 'Nécessite un compte (pas de commande invité)',
     'Reset' => 'Remise à zéro',
     'Reset default values' => 'Réinitialiser les valeurs par défaut',
     'Reset password' => 'Réinitialiser le mot de passe',
@@ -1231,7 +1245,7 @@ return [
     'specific redefinition' => 'redéfinition spécifique',
     'Stability' => 'Stabilité',
     'Start Date' => 'Date de début',
-    'Start date' => 'Date de début ',
+    'Start date' => "Date de début\u{a0}",
     'State' => 'État/région',
     'State name' => 'Nom de la région',
     'States' => 'États',
