@@ -1,0 +1,110 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Checkout consents'|trans }}{% endblock %}
+{% block body_testid %}configuration-consents{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Checkout consents'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {{ safe_hook('consent.top') }}
+
+    <div class="container-fluid" data-testid="consents-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Checkout consents management'|trans }}</h1>
+            {% if is_granted('CREATE', 'admin.configuration.consent') %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#consent-create-modal" data-testid="consent-create-button">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a new consent'|trans }}
+                </button>
+            {% endif %}
+        </div>
+
+        {{ component('BoDataTable', {
+            id: 'consents',
+            columns: [
+                column('id', 'ID'|trans, 'start', 'id', hideBelow: 'md'),
+                column('title', 'Title'|trans, 'start', 'title'),
+                column('code', 'Code'|trans, 'start', 'code', hideBelow: 'lg'),
+                column_toggle('mandatory', 'Mandatory'|trans, null),
+                column_toggle('active', 'Active'|trans, 'toggle_active_url'),
+                column('position', 'Position'|trans, 'center', 'position', hideBelow: 'lg'),
+                column_actions('_actions', 'Actions'|trans),
+            ],
+            rows: rows,
+            emptyMessage: 'No consent defined yet.'|trans,
+            extraColumnsHeaderHook: 'consent.table-header',
+            extraColumnsHook: 'consent.table-row',
+            rowHookArgs: { consent_id: 'id' },
+            sortField: sort_field,
+            sortDirection: sort_direction,
+            tbodyAttributes: {
+                'data-controller': 'bo-sortable',
+                'data-bo-sortable-url-value': update_position_url,
+                'data-bo-sortable-token-value': update_position_token,
+                'data-bo-sortable-param-name-value': 'consent_id',
+            },
+        }) }}
+    </div>
+
+    {{ safe_hook('consent.bottom') }}
+
+    {% component 'BoCreateDialog' with {
+        id: 'consent-create-modal',
+        title: 'Create a new consent',
+        form: create_form,
+        formAction: path('admin.consent.create'),
+        submitLabel: 'Create',
+        testid: 'consent-create',
+        size: '',
+    } %}
+        {% block fields %}
+            <div class="mb-3">
+                {{ form_label(create_form.code) }}
+                {{ form_widget(create_form.code, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.title) }}
+                {{ form_widget(create_form.title, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.description) }}
+                {{ form_widget(create_form.description, { attr: { class: 'form-control', rows: 3 } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.content_id) }}
+                {{ form_widget(create_form.content_id, { attr: { class: 'form-select' } }) }}
+                <div class="form-text">{{ 'The published content whose text the buyer is shown, if any.'|trans }}</div>
+            </div>
+            <div class="form-check mb-2">
+                {{ form_widget(create_form.mandatory, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.mandatory, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form_widget(create_form.active, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            {{ form_widget(create_form.locale) }}
+        {% endblock %}
+    {% endcomponent %}
+
+    {{ component('BoConfirmDialog', {
+        id: 'consent-delete-modal',
+        title: 'Delete consent',
+        formAction: path('admin.consent.delete'),
+        message: 'Do you really want to delete this consent?',
+        testid: 'consent-delete',
+        prefillTrigger: 'data-consent-id',
+        prefillInput: 'consent_id',
+    }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('consent.js', { location: 'consent-js' }) }}
+{% endblock %}

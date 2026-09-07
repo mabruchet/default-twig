@@ -17,6 +17,7 @@ namespace BackOfficeDefaultTwigBundle\Service\Order;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Model\ModuleQuery;
 use Thelia\Model\Order;
+use Thelia\Model\OrderConsent;
 use Thelia\Model\OrderCoupon;
 use Thelia\Model\OrderStatusQuery;
 
@@ -110,6 +111,17 @@ final readonly class OrderDetailContextBuilder
         $invoiceDate = $order->getInvoiceDate();
         $invoiceDateString = $invoiceDate instanceof \DateTimeInterface ? $invoiceDate->format(\DATE_ATOM) : null;
 
+        $consents = [];
+        foreach ($order->getOrderConsents() as $orderConsent) {
+            \assert($orderConsent instanceof OrderConsent);
+            $createdAt = $orderConsent->getCreatedAt();
+            $consents[] = [
+                'title' => (string) $orderConsent->getTitle(),
+                'accepted' => $orderConsent->isAccepted(),
+                'created_at' => $createdAt instanceof \DateTimeInterface ? $createdAt->format(\DATE_ATOM) : null,
+            ];
+        }
+
         return [
             'totals' => [
                 'subtotal_ht' => $subtotalHt,
@@ -146,6 +158,7 @@ final readonly class OrderDetailContextBuilder
                 'delivery_ref' => (string) $order->getDeliveryRef(),
             ],
             'coupons' => $coupons,
+            'consents' => $consents,
             'cancel_status_id' => $cancelStatusId,
             'is_canceled' => $cancelStatusId > 0 && (int) $order->getStatusId() === $cancelStatusId,
             'currency' => [

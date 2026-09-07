@@ -398,6 +398,29 @@
                     </div>
                 {% endif %}
 
+                {% if consents|length > 0 %}
+                    <div class="card mb-3" data-testid="order-consents">
+                        <div class="card-header">{{ 'Consents'|trans }}</div>
+                        <ul class="list-group list-group-flush small">
+                            {% for consent in consents %}
+                                <li class="list-group-item d-flex justify-content-between align-items-start gap-2">
+                                    <span>{{ consent.title }}</span>
+                                    <span class="text-end">
+                                        {% if consent.accepted %}
+                                            <span class="badge text-bg-success">{{ 'Accepted'|trans }}</span>
+                                        {% else %}
+                                            <span class="badge text-bg-danger">{{ 'Refused'|trans }}</span>
+                                        {% endif %}
+                                        {% if consent.created_at %}
+                                            <div class="text-muted">{{ consent.created_at|date('d/m/Y H:i') }}</div>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
                 <div class="card mb-3" data-testid="order-payment">
                     <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                         <span>{{ 'Payment'|trans }}</span>

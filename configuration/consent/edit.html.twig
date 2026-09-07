@@ -1,0 +1,85 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Edit consent'|trans }} - {{ consent.title }}{% endblock %}
+{% block body_testid %}configuration-consent-edit{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.consent.default') }}">{{ 'Checkout consents'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ consent.title }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {% form_theme form with bo_form_themes only %}
+
+    {{ safe_hook('consent-edit.top', { consent_id: consent.id }) }}
+
+    <div class="container-fluid" data-testid="consent-edit-page">
+        <h1 class="h3 mb-2">{{ 'Consent'|trans }} <small class="text-muted"><code>{{ consent.code }}</code> - #{{ consent.id }}</small></h1>
+
+        <div class="mb-3">
+            {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                {{ form_start(form, { action: path('admin.consent.save', { consent_id: consent.id }), method: 'post', attr: { 'data-testid': 'consent-edit-form' } }) }}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            {{ form_label(form.code) }}
+                            {{ form_widget(form.code, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'The code is set once, when the consent is created, and cannot be changed afterwards.'|trans }}</div>
+                        </div>
+                        <div class="col-md-8">
+                            {{ form_label(form.title) }}
+                            {{ form_widget(form.title, { attr: { class: 'form-control' } }) }}
+                        </div>
+                        <div class="col-12">
+                            {{ form_label(form.description) }}
+                            {{ form_widget(form.description, { attr: { class: 'form-control', rows: 6 } }) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form_label(form.content_id) }}
+                            {{ form_widget(form.content_id, { attr: { class: 'form-select' } }) }}
+                            <div class="form-text">{{ 'The published content whose text the buyer is shown, if any.'|trans }}</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                {{ form_widget(form.mandatory, { attr: { class: 'form-check-input' } }) }}
+                                {{ form_label(form.mandatory, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            <div class="form-check form-switch">
+                                {{ form_widget(form.active, { attr: { class: 'form-check-input' } }) }}
+                                {{ form_label(form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            {% if not consent.deletable %}
+                                <div class="form-text" data-testid="consent-locked-notice">
+                                    {{ 'This consent is required by the shop: it always stays mandatory and active.'|trans }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {{ form_widget(form.id) }}
+                    {{ form_widget(form.locale) }}
+                    {{ safe_hook('consent.update-form', { consent_id: consent.id }) }}
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <a href="{{ path('admin.consent.default') }}" class="btn btn-outline-secondary">{{ 'Back'|trans }}</a>
+                        <button type="submit" class="btn btn-primary" data-testid="consent-edit-submit"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}</button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+
+    {{ safe_hook('consent-edit.bottom', { consent_id: consent.id }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('consent.edit-js', { consent_id: consent.id }) }}
+    {{ safe_hook('wysiwyg.js') }}
+{% endblock %}
