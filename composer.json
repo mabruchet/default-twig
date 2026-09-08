@@ -10,7 +10,7 @@
     ],
     "require": {
         "php": ">=8.3",
-        "thelia/core": "^3.0.0-beta4",
+        "thelia/core": "^3.0.1",
         "symfony/asset": "^7.4",
         "symfony/asset-mapper": "^7.4",
         "symfony/framework-bundle": "^7.4",
