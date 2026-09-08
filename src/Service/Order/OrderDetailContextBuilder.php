@@ -114,11 +114,15 @@ final readonly class OrderDetailContextBuilder
         $consents = [];
         foreach ($order->getOrderConsents() as $orderConsent) {
             \assert($orderConsent instanceof OrderConsent);
-            $createdAt = $orderConsent->getCreatedAt();
+            // The moment the box was answered, which precedes the order: created_at
+            // here is the instant the proof was written down, inside the order
+            // transaction, and saying "accepted on" about it would be a small lie.
+            $answeredAt = $orderConsent->getAnsweredAt() ?? $orderConsent->getCreatedAt();
             $consents[] = [
                 'title' => (string) $orderConsent->getTitle(),
+                'description' => (string) $orderConsent->getDescription(),
                 'accepted' => $orderConsent->isAccepted(),
-                'created_at' => $createdAt instanceof \DateTimeInterface ? $createdAt->format(\DATE_ATOM) : null,
+                'answered_at' => $answeredAt instanceof \DateTimeInterface ? $answeredAt->format(\DATE_ATOM) : null,
             ];
         }
 
