@@ -125,12 +125,8 @@ final class ConsentController
     #[Route('/save/{consent_id}', name: 'save', methods: ['POST'], requirements: ['consent_id' => '\d+'])]
     public function processUpdate(int $consent_id, Request $request): Response
     {
-        $consent = ConsentQuery::create()->findPk($consent_id);
-        $locked = $consent !== null && !$consent->isDeletable();
-
         $form = $this->formFactory->createNamed('thelia_consent_modification', ConsentType::class, null, [
             'include_id' => true,
-            'locked' => $locked,
             'content_choices' => $this->contentChoiceMap($request->getLocale()),
         ]);
 
@@ -292,7 +288,6 @@ final class ConsentController
     private function consentToRow(Consent $consent): array
     {
         $id = (int) $consent->getId();
-        $deletable = $consent->isDeletable();
 
         $actions = [
             new RowAction(
@@ -304,7 +299,7 @@ final class ConsentController
             ),
         ];
 
-        if ($deletable) {
+        if ($consent->isDeletable()) {
             $actions[] = new RowAction(
                 kind: 'delete',
                 label: $this->translator->trans('Delete'),
@@ -321,11 +316,9 @@ final class ConsentController
             'title' => (string) $consent->getTitle(),
             'mandatory' => $consent->isMandatory(),
             'active' => $consent->isActive(),
-            // A consent the shop cannot do without keeps its switch readonly: null here
-            // renders the toggle cell inert instead of a clickable link (see toggle.html.twig).
-            'toggle_active_url' => $deletable
-                ? $this->tokenizedUrl('admin.consent.toggle-active', ['consent_id' => $id])
-                : null,
+            // Every consent can be turned off, the terms and conditions included: a shop
+            // whose theme cannot display the box has to be able to stop asking for it.
+            'toggle_active_url' => $this->tokenizedUrl('admin.consent.toggle-active', ['consent_id' => $id]),
             'position' => (int) $consent->getPosition(),
             '_actions' => $actions,
         ];
@@ -333,8 +326,6 @@ final class ConsentController
 
     private function buildUpdateForm(Consent $consent, string $locale): FormInterface
     {
-        $locked = !$consent->isDeletable();
-
         return $this->formFactory->createNamed('thelia_consent_modification', ConsentType::class, [
             'id' => $consent->getId(),
             'locale' => $locale,
@@ -346,7 +337,6 @@ final class ConsentController
             'active' => $consent->isActive(),
         ], [
             'include_id' => true,
-            'locked' => $locked,
             'content_choices' => $this->contentChoiceMap($locale),
         ]);
     }

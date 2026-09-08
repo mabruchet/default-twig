@@ -1535,7 +1535,7 @@ return [
     'This category uses the template configuration %templateId.' => 'Cette catégorie utilise la configuration de gabarit %templateId.',
     'This consent is active' => 'Ce consentement est actif',
     'This consent is mandatory' => 'Ce consentement est obligatoire',
-    'This consent is required by the shop: it always stays mandatory and active.' => 'Ce consentement est requis par la boutique : il reste toujours obligatoire et actif.',
+    'This consent is required by the shop: it cannot be deleted. It can still be turned off, or made optional, while your front-office theme cannot display it.' => 'Ce consentement est requis par la boutique : il ne peut pas être supprimé. Il reste possible de le désactiver, ou de le rendre facultatif, tant que votre thème de boutique ne sait pas l\'afficher.',
     'This content is online' => 'Ce contenu est en ligne',
     'This country is online' => 'Ce pays est en ligne',
     'This country uses a ZIP code' => 'Ce pays utilise un code postal',

@@ -62,12 +62,10 @@ final class ConsentType extends AbstractType
             ])
             ->add('mandatory', CheckboxType::class, [
                 'required' => false,
-                'disabled' => $options['locked'],
                 'label' => $this->translator->trans('This consent is mandatory'),
             ])
             ->add('active', CheckboxType::class, [
                 'required' => false,
-                'disabled' => $options['locked'],
                 'label' => $this->translator->trans('This consent is active'),
             ])
             ->add('locale', HiddenType::class, [
@@ -86,15 +84,10 @@ final class ConsentType extends AbstractType
         $resolver
             ->setDefaults([
                 'include_id' => false,
-                // The undeletable consents (terms and conditions) refuse the two edits that
-                // amount to deletion in disguise: turning mandatory or active off. Locking
-                // mirrors Thelia\Action\Consent's server-side refusal in the UI.
-                'locked' => false,
                 'content_choices' => [],
                 'csrf_token_id' => 'admin.consent',
             ])
             ->setAllowedTypes('include_id', 'bool')
-            ->setAllowedTypes('locked', 'bool')
             ->setAllowedTypes('content_choices', 'array');
     }
 }
