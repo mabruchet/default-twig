@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Coupon;
 
+use BackOfficeDefaultTwigBundle\Service\Customer\CustomerChoiceProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -33,7 +34,6 @@ use Thelia\Condition\Implementation\MatchForXArticles;
 use Thelia\Condition\Implementation\StartDate;
 use Thelia\Model\CategoryQuery;
 use Thelia\Model\CurrencyQuery;
-use Thelia\Model\CustomerQuery;
 use Thelia\Model\LangQuery;
 use Thelia\Model\ProductQuery;
 use Twig\Environment;
@@ -50,6 +50,7 @@ final readonly class CouponConditionsRenderer
         private Environment $twig,
         private TranslatorInterface $translator,
         private CountryStateProvider $countryStates,
+        private CustomerChoiceProvider $customerChoiceProvider,
         #[Autowire(service: 'thelia.condition.factory')]
         private ConditionFactory $conditionFactory,
         #[Autowire(service: 'service_container')]
@@ -201,6 +202,7 @@ final readonly class CouponConditionsRenderer
                 'field_name' => ForSomeCustomers::CUSTOMERS_LIST,
                 'selected_values' => $this->normalizeIdList($setValues[ForSomeCustomers::CUSTOMERS_LIST] ?? []),
                 'customers_choices' => $this->customerChoices($setValues[ForSomeCustomers::CUSTOMERS_LIST] ?? []),
+                'customers_choices_show_email' => $this->customerChoiceProvider->labelsIncludeEmail(),
             ]),
             default => $params,
         };
@@ -284,31 +286,7 @@ final readonly class CouponConditionsRenderer
      */
     private function customerChoices(mixed $alreadySelected): array
     {
-        $ids = $this->normalizeIdList($alreadySelected);
-        $selectedRows = $ids === []
-            ? []
-            : CustomerQuery::create()->filterById($ids, \Propel\Runtime\ActiveQuery\Criteria::IN)->find();
-
-        $latestRows = CustomerQuery::create()->orderByCreatedAt(\Propel\Runtime\ActiveQuery\Criteria::DESC)->limit(50)->find();
-
-        $choices = [];
-        $seen = [];
-        foreach ($selectedRows as $customer) {
-            $id = (int) $customer->getId();
-            $seen[$id] = true;
-            $choices[] = ['id' => $id, 'label' => trim(\sprintf('%s %s (%s)', (string) $customer->getLastname(), (string) $customer->getFirstname(), (string) $customer->getRef()))];
-        }
-        foreach ($latestRows as $customer) {
-            $id = (int) $customer->getId();
-            if (isset($seen[$id])) {
-                continue;
-            }
-            $choices[] = ['id' => $id, 'label' => trim(\sprintf('%s %s (%s)', (string) $customer->getLastname(), (string) $customer->getFirstname(), (string) $customer->getRef()))];
-        }
-
-        usort($choices, static fn (array $a, array $b): int => strcasecmp($a['label'], $b['label']));
-
-        return $choices;
+        return $this->customerChoiceProvider->choices($this->normalizeIdList($alreadySelected));
     }
 
     private function countryLabelFor(ConditionInterface $condition): string

@@ -122,7 +122,9 @@ final class SaleController
         $locale = $editLang->getLocale() ?? 'en_US';
         $sale->setLocale($locale);
         $context = $this->editContextBuilder->build($sale, $locale);
-        $form = $this->formFactory->createNamed('thelia_sale', SaleType::class, $context['form_data']);
+        $form = $this->formFactory->createNamed('thelia_sale', SaleType::class, $context['form_data'], [
+            'can_target_customers' => $context['can_target_customers'],
+        ]);
 
         return new Response($this->twig->render(self::EDIT_TEMPLATE, array_merge(
             $context,
@@ -136,7 +138,9 @@ final class SaleController
         return $this->action->submit(
             resource: self::RESOURCE,
             access: AccessManager::UPDATE,
-            form: $this->formFactory->createNamed('thelia_sale', SaleType::class),
+            form: $this->formFactory->createNamed('thelia_sale', SaleType::class, null, [
+                'can_target_customers' => $this->editContextBuilder->canTargetCustomers(),
+            ]),
             eventName: TheliaEvents::SALE_UPDATE,
             eventFactory: fn (FormInterface $validated) => $this->eventFactory->updateEvent($sale_id, (array) $validated->getData(), $request, $this->defaultLocale()),
             actionLabel: 'Sale update',

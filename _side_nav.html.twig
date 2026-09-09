@@ -154,20 +154,29 @@
                     </a>
                     <ul class="nav flex-column collapse {{ active ? 'show' : '' }}" id="bo-nav-tools-collapse">
                         {% if is_granted('VIEW', 'admin.brand') %}
-                            <li><a class="nav-link" href="{{ path('admin.brand.default') }}">{{ 'Brands'|trans }}</a></li>
+                            {% set item_active = nav.is_section(current_path, ['/admin/brand']) %}
+                            <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('admin.brand.default') }}">{{ 'Brands'|trans }}</a></li>
                         {% endif %}
                         {% if is_granted('VIEW', 'admin.coupon') %}
-                            <li><a class="nav-link" href="{{ path('admin.coupon.default') }}">{{ 'Coupons'|trans }}</a></li>
+                            {% set item_active = nav.is_section(current_path, ['/admin/coupon']) %}
+                            <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('admin.coupon.default') }}">{{ 'Coupons'|trans }}</a></li>
                         {% endif %}
                         {% if is_granted('VIEW', 'admin.sales') %}
-                            <li><a class="nav-link" href="{{ path('admin.sale.default') }}">{{ 'Sales'|trans }}</a></li>
+                            {# Route names are singular (admin.sale.*) but the list URL is plural
+                               (/admin/sales); the shared prefix below matches both that and the
+                               edit screen (/admin/sale/update/{id}). #}
+                            {% set item_active = nav.is_section(current_path, ['/admin/sale']) %}
+                            <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('admin.sale.default') }}" data-testid="bo-nav-tools-sales">{{ 'Sales'|trans }}</a></li>
                         {% endif %}
-                        <li><a class="nav-link" href="{{ path('admin.newsletter.default') }}">{{ 'Newsletter'|trans }}</a></li>
+                        {% set item_active = nav.is_section(current_path, ['/admin/newsletter']) %}
+                        <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('admin.newsletter.default') }}">{{ 'Newsletter'|trans }}</a></li>
                         {% if is_granted('VIEW', 'admin.export') %}
-                            <li><a class="nav-link" href="{{ path('export.list') }}">{{ 'Export'|trans }}</a></li>
+                            {% set item_active = nav.is_section(current_path, ['/admin/export']) %}
+                            <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('export.list') }}">{{ 'Export'|trans }}</a></li>
                         {% endif %}
                         {% if is_granted('VIEW', 'admin.import') %}
-                            <li><a class="nav-link" href="{{ path('import.list') }}">{{ 'Import'|trans }}</a></li>
+                            {% set item_active = nav.is_section(current_path, ['/admin/import']) %}
+                            <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('import.list') }}">{{ 'Import'|trans }}</a></li>
                         {% endif %}
                         {% for fragment in hook_block('main.top-menu-tools', { fields: 'id,class,url,title' }) %}
                             <li><a class="nav-link" href="{{ fragment.url }}"{% if fragment.id %} id="{{ fragment.id }}"{% endif %}>{{ fragment.title }}</a></li>

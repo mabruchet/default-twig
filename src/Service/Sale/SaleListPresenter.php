@@ -38,6 +38,8 @@ final readonly class SaleListPresenter
      *     start_date: ?string,
      *     end_date: ?string,
      *     active: bool,
+     *     reserved: bool,
+     *     targeted_customers_count: int,
      *     offset_type_label: string,
      *     products_count: int,
      *     edit_url: string,
@@ -57,6 +59,11 @@ final readonly class SaleListPresenter
                 'start_date' => $sale->getStartDate('Y-m-d'),
                 'end_date' => $sale->getEndDate('Y-m-d'),
                 'active' => (bool) $sale->getActive(),
+                // Both read off the row already loaded above: no extra query per line.
+                // A reserved sale down to zero customers is invisible to the whole shop,
+                // which is what the list has to be able to show.
+                'reserved' => $sale->isReserved(),
+                'targeted_customers_count' => (int) $sale->getVirtualColumn(SaleRepository::TARGETED_CUSTOMERS_COUNT),
                 'offset_type_label' => $this->offsetTypeLabel((int) $sale->getPriceOffsetType()),
                 'products_count' => $sale->getSaleProductList()->count(),
                 'edit_url' => $this->urls->generate('admin.sale.update', ['sale_id' => $id]),

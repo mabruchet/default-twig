@@ -35,9 +35,28 @@
 
         {% set table_rows = [] %}
         {% for row in rows %}
+            {# A reserved sale names the customers it is for, and the link to a customer
+               is deleted with the customer. A sale left at zero is still marked reserved
+               yet nobody can see it, so it gets an alert badge rather than the plain one. #}
+            {% set reserved_badge = '' %}
+            {% if row.reserved and row.targeted_customers_count > 0 %}
+                {% set reserved_badge = ' <span class="badge bg-warning-subtle text-warning-emphasis"'
+                    ~ ' data-testid="sale-reserved-badge-' ~ row.id ~ '" data-reserved-count="' ~ row.targeted_customers_count ~ '"'
+                    ~ ' title="' ~ 'This sale is reserved for named customers.'|trans|e ~ '">'
+                    ~ ('Reserved · %count% customer(s)'|trans({'%count%': row.targeted_customers_count}))|e
+                    ~ '</span>' %}
+            {% elseif row.reserved %}
+                {% set reserved_badge = ' <span class="badge bg-danger text-white"'
+                    ~ ' data-testid="sale-reserved-badge-' ~ row.id ~ '" data-reserved-count="0"'
+                    ~ ' title="' ~ 'Reserved, but no customer is targeted any more: nobody can see this sale. Select customers again, or make it public.'|trans|e ~ '">'
+                    ~ '<i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> '
+                    ~ 'Reserved · no customer'|trans|e
+                    ~ '</span>' %}
+            {% endif %}
             {% set table_rows = table_rows|merge([{
                 'id': row.id,
-                'title_html': '<a href="' ~ row.edit_url|e ~ '" class="fw-semibold text-decoration-none">' ~ (row.title ?: '#' ~ row.id)|e ~ '</a>',
+                'title_html': '<a href="' ~ row.edit_url|e ~ '" class="fw-semibold text-decoration-none">' ~ (row.title ?: '#' ~ row.id)|e ~ '</a>'
+                    ~ reserved_badge,
                 'label_html': row.label ? '<span class="badge bg-danger-subtle text-danger-emphasis">' ~ row.label|e ~ '</span>' : '<span class="text-body-secondary">-</span>',
                 'start_date': row.start_date ?? '-',
                 'end_date': row.end_date ?? '-',
@@ -46,7 +65,7 @@
                 'status_html': '<a href="' ~ row.toggle_url|e ~ '" class="text-decoration-none" data-testid="sale-toggle-' ~ row.id ~ '">' ~ (row.active ? '<span class="badge bg-success">' ~ 'Active'|trans ~ '</span>' : '<span class="badge bg-secondary">' ~ 'Inactive'|trans ~ '</span>') ~ '</a>',
                 '_actions': [
                     row_action('edit', 'Edit'|trans, row.edit_url),
-                    row_action('delete', 'Delete'|trans, null, '#sale-delete-modal', null, null, {'data-sale-id': row.id}),
+                    row_action('delete', 'Delete'|trans, null, '#sale-delete-modal', null, null, {'sale-id': row.id}),
                 ],
             }]) %}
         {% endfor %}

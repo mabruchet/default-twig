@@ -1,0 +1,40 @@
+{#
+  Shared customer picker: a search box that hides the non-matching options of a
+  multi-select, client-side. Used by the coupon conditions and by the audience of a
+  reserved sale, so both screens list customers the same way.
+
+  Parameters:
+    name       - the HTML name of the select (e.g. 'sale_customers[]')
+    choices    - list of {id, label}, built by CustomerChoiceProvider
+    selected   - list of already-selected customer ids
+    testid     - prefix for the data-testid attributes ('<testid>-filter', '<testid>-select')
+    required   - whether the select must hold a selection (default false)
+    size       - visible rows of the select (default 8)
+    id         - optional id for the select, so a label can point at it
+    with_email - whether the labels carry an e-mail address, which only an admin with
+                 the right to view customers is handed (CustomerChoiceProvider decides):
+                 the filter hint has to say what is really searchable (default false)
+#}
+{% set filter_hint = with_email|default(false) ? 'Filter (name, ref, email)…'|trans : 'Filter (name, ref)…'|trans %}
+<div data-controller="bo-multiselect-search">
+    <input type="search"
+           class="form-control mb-2"
+           placeholder="{{ filter_hint }}"
+           aria-label="{{ filter_hint }}"
+           data-bo-multiselect-search-target="input"
+           data-action="input->bo-multiselect-search#filter"
+           data-testid="{{ testid }}-filter">
+    <select multiple
+            {{ required|default(false) ? 'required' : '' }}
+            {% if id|default('') is not empty %}id="{{ id }}"{% endif %}
+            size="{{ size|default(8) }}"
+            class="form-select"
+            name="{{ name }}"
+            data-bo-multiselect-search-target="select"
+            data-testid="{{ testid }}-select">
+        {% for choice in choices %}
+            <option value="{{ choice.id }}" {{ choice.id in selected ? 'selected' : '' }}>{{ choice.label }}</option>
+        {% endfor %}
+    </select>
+    <span class="form-text small">{{ 'Up to the 50 latest customers and already-selected customers are listed. Use the filter to narrow the list.'|trans }}</span>
+</div>

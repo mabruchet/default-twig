@@ -16,6 +16,8 @@ namespace BackOfficeDefaultTwigBundle\Repository;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
+use Thelia\Model\Map\SaleCustomerTableMap;
+use Thelia\Model\Map\SaleTableMap;
 use Thelia\Model\Product;
 use Thelia\Model\ProductQuery;
 use Thelia\Model\Sale;
@@ -23,6 +25,12 @@ use Thelia\Model\SaleQuery;
 
 final readonly class SaleRepository
 {
+    /**
+     * How many customers a sale is reserved for, counted in the list query itself.
+     * Read it off a row with {@see Sale::getVirtualColumn()}.
+     */
+    public const TARGETED_CUSTOMERS_COUNT = 'targeted_customers_count';
+
     public function findById(int $saleId): ?Sale
     {
         return SaleQuery::create()->findPk($saleId);
@@ -42,12 +50,27 @@ final readonly class SaleRepository
     }
 
     /**
+     * Every row also carries {@see self::TARGETED_CUSTOMERS_COUNT}, the number of
+     * customers the sale is reserved for. `sale_customer.customer_id` cascades on
+     * delete, so purging the last targeted customer empties the audience of a reserved
+     * sale without touching the sale itself: the list has to be able to say so. The
+     * count is a correlated sub-select inside the list query — never a read per row.
+     *
      * @return ObjectCollection<int, Sale>
      */
     public function findAllSorted(string $field, string $direction, string $locale): ObjectCollection
     {
         $criteria = strtoupper($direction) === 'DESC' ? Criteria::DESC : Criteria::ASC;
-        $query = SaleQuery::create();
+        $query = SaleQuery::create()
+            ->withColumn(
+                \sprintf(
+                    '(SELECT COUNT(*) FROM %s WHERE %s = %s)',
+                    SaleCustomerTableMap::TABLE_NAME,
+                    SaleCustomerTableMap::COL_SALE_ID,
+                    SaleTableMap::COL_ID,
+                ),
+                self::TARGETED_CUSTOMERS_COUNT,
+            );
 
         match ($field) {
             'id' => $query->orderById($criteria),

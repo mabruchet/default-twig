@@ -1,5 +1,5 @@
 {% set selected_operator = validators.setOperators[field_name] ?? 'in' %}
-<div class="mb-3" data-controller="bo-coupon-multiselect-search">
+<div class="mb-3" data-controller="bo-multiselect-search">
     <label class="form-label">{{ 'Products are :'|trans }}</label>
     <div class="row g-2">
         <div class="col-md-4">
@@ -13,14 +13,14 @@
             <input type="search"
                    class="form-control mb-2"
                    placeholder="{{ 'Filter…'|trans }}"
-                   data-bo-coupon-multiselect-search-target="input"
-                   data-action="input->bo-coupon-multiselect-search#filter"
+                   data-bo-multiselect-search-target="input"
+                   data-action="input->bo-multiselect-search#filter"
                    data-testid="coupon-products-filter">
             <select required multiple
                     size="8"
                     class="form-select"
                     name="{{ field_name }}[value][]"
-                    data-bo-coupon-multiselect-search-target="select"
+                    data-bo-multiselect-search-target="select"
                     data-testid="coupon-products-select">
                 {% for choice in products_choices %}
                     <option value="{{ choice.id }}" {{ choice.id in selected_values ? 'selected' : '' }}>{{ choice.label }}</option>

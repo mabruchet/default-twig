@@ -18,9 +18,15 @@
 
     <div class="container-fluid"
          data-testid="sale-edit-page"
-         data-controller="bo-sale-product-picker"
+         data-controller="bo-sale-product-picker bo-sale-targeting"
          data-bo-sale-product-picker-products-url-value="{{ products_url }}"
-         data-bo-sale-product-picker-attributes-label-value="{{ 'Restrict to attribute values'|trans }}">
+         data-bo-sale-product-picker-attributes-label-value="{{ 'Restrict to attribute values'|trans }}"
+         {# Translated with the placeholder left in: the controller substitutes the
+            live count on every tick. #}
+         data-bo-sale-product-picker-count-template-value="{{ '%count% product(s) selected'|trans }}"
+         data-bo-sale-product-picker-shown-template-value="{{ '%count% shown by the filter'|trans }}"
+         data-bo-sale-targeting-reserved-value="{{ constant('Thelia\\Model\\Sale::AUDIENCE_MODE_CUSTOMERS') }}"
+         data-bo-sale-targeting-lead-hours-value="{{ constant('Thelia\\Model\\Sale::COUNTDOWN_MODE_LEAD_HOURS') }}">
 
         {% form_theme form with bo_form_themes only %}
         {{ form_start(form, { action: path('admin.sale.save', { sale_id: sale.id }), attr: { 'data-testid': 'sale-edit-form' } }) }}
@@ -76,36 +82,76 @@
                     <div class="card mb-3">
                         <div class="card-header">{{ 'Products covered by this sale'|trans }}</div>
                         <div class="card-body">
-                            <div class="row g-2 align-items-end mb-3">
-                                <div class="col-md-9">
-                                    <label class="form-label" for="sale-categories">{{ 'Product categories'|trans }}</label>
-                                    <select id="sale-categories" multiple size="6" class="form-select"
-                                            data-bo-sale-product-picker-target="categories" data-testid="sale-categories">
-                                        {% for category in all_categories %}
-                                            <option value="{{ category.id }}" {% if category.id in selected_category_ids %}selected{% endif %}>{{ category.title }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <div class="form-text">{{ 'Select categories then load their products.'|trans }}</div>
-                                </div>
-                                <div class="col-md-3">
-                                    <button type="button" class="btn btn-outline-primary w-100"
+                            <div class="mb-3">
+                                <label class="form-label" for="sale-categories">{{ 'Product categories'|trans }}</label>
+                                <select id="sale-categories" multiple size="6" class="form-select"
+                                        data-bo-sale-product-picker-target="categories" data-testid="sale-categories">
+                                    {% for category in all_categories %}
+                                        <option value="{{ category.id }}" {% if category.id in selected_category_ids %}selected{% endif %}>{{ category.title }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                                    <button type="button" class="btn btn-outline-primary"
                                             data-action="bo-sale-product-picker#loadProducts" data-testid="sale-load-products">
                                         <i class="bi bi-download" aria-hidden="true"></i> {{ 'Load products'|trans }}
                                     </button>
+                                    <div class="form-text mb-0">{{ 'Select categories then load their products.'|trans }}</div>
                                 </div>
                             </div>
 
+                            <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+                                <div class="flex-grow-1">
+                                    <label class="form-label mb-1" for="sale-product-filter">{{ 'Filter the loaded products'|trans }}</label>
+                                    {# Deliberately nameless: the box narrows the list client-side and
+                                       must not travel with the form. #}
+                                    <input type="search" class="form-control form-control-sm" id="sale-product-filter"
+                                           placeholder="{{ 'Reference or title'|trans }}" autocomplete="off"
+                                           data-bo-sale-product-picker-target="filter"
+                                           data-action="input->bo-sale-product-picker#filter keydown.enter->bo-sale-product-picker#blockEnter"
+                                           data-testid="sale-product-filter">
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Select all'|trans }} / {{ 'Deselect all'|trans }}">
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            data-action="bo-sale-product-picker#selectAllVisible"
+                                            title="{{ 'Applies to the products the filter currently shows.'|trans }}"
+                                            data-testid="sale-product-select-all">{{ 'Select all'|trans }}</button>
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            data-action="bo-sale-product-picker#deselectAllVisible"
+                                            title="{{ 'Applies to the products the filter currently shows.'|trans }}"
+                                            data-testid="sale-product-deselect-all">{{ 'Deselect all'|trans }}</button>
+                                </div>
+                            </div>
+
+                            <div class="form-text mt-0 mb-2" aria-live="polite"
+                                 data-bo-sale-product-picker-target="count"
+                                 data-testid="sale-product-count"
+                                 data-selected-count="{{ selected_products|length }}"
+                                 data-shown-count="{{ selected_products|length }}">
+                                {{ '%count% product(s) selected'|trans({'%count%': selected_products|length}) }}
+                            </div>
+
+                            {# A row hidden by the filter keeps its checkbox in the form, so the
+                               selection is never lost while filtering. #}
                             <div class="border rounded p-3" style="max-height: 320px; overflow-y: auto;"
-                                 data-bo-sale-product-picker-target="productZone" data-testid="sale-product-zone">
+                                 data-bo-sale-product-picker-target="productZone" data-testid="sale-product-zone"
+                                 data-action="change->bo-sale-product-picker#refresh">
                                 {% for product in selected_products %}
                                     {% set product_av_ids = selected_product_attributes[product.id]|default([]) %}
-                                    <div class="d-flex align-items-center gap-2 mb-1" data-product-id="{{ product.id }}">
+                                    <div class="d-flex align-items-center gap-2 mb-1"
+                                         data-sale-product-row="1"
+                                         data-product-id="{{ product.id }}"
+                                         data-persisted="1"
+                                         data-search="{{ (product.ref ~ ' ' ~ product.title)|lower }}">
                                         <div class="form-check flex-grow-1 mb-0">
-                                            <input class="form-check-input" type="checkbox" name="products[]" value="{{ product.id }}" id="sale-product-{{ product.id }}" checked>
+                                            <input class="form-check-input" type="checkbox" name="products[]" value="{{ product.id }}" id="sale-product-{{ product.id }}" data-testid="sale-product-check-{{ product.id }}" checked>
                                             <label class="form-check-label" for="sale-product-{{ product.id }}">
                                                 <code>{{ product.ref }}</code> {{ product.title }}
                                             </label>
                                         </div>
+                                        {# Tells apart what the sale already covers from what a load
+                                           just added, once both sit in the same list. #}
+                                        <span class="badge text-bg-light border fw-normal"
+                                              data-testid="sale-product-covered-{{ product.id }}">{{ 'Already covered'|trans }}</span>
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-secondary"
                                                 data-bs-toggle="modal"
@@ -122,6 +168,9 @@
                                 {% else %}
                                     <p class="text-body-secondary mb-0" data-bo-sale-product-picker-target="emptyHint">{{ 'No product selected yet. Pick categories and load their products.'|trans }}</p>
                                 {% endfor %}
+                                <p class="text-body-secondary mb-0 d-none"
+                                   data-bo-sale-product-picker-target="noMatch"
+                                   data-testid="sale-product-no-match">{{ 'No product matches this filter.'|trans }}</p>
                             </div>
 
                             <div data-bo-sale-product-attributes-inputs>
@@ -131,6 +180,79 @@
                                     {% endif %}
                                 {% endfor %}
                             </div>
+                        </div>
+                    </div>
+
+                    {# sale_is_reserved is the audience as stored, not the one the radios
+                       currently show: a reserved sale whose last targeted customer was
+                       deleted keeps its mode and loses its audience, and that is exactly
+                       the state worth flagging. #}
+                    {% set targeted_count = selected_customer_ids|length %}
+                    {% set reserved_for_nobody = sale_is_reserved and targeted_count == 0 %}
+
+                    <div class="card mb-3" data-testid="sale-targeting-card">
+                        <div class="card-header">{{ 'Targeting'|trans }}</div>
+                        <div class="card-body">
+                            {% if can_target_customers %}
+                                <fieldset class="mb-3">
+                                    {{ form_label(form.audience_mode) }}
+                                    {# Rendered radio by radio: the Stimulus attributes belong on the
+                                       inputs, and form_widget() on the group would put them on its
+                                       wrapper instead. #}
+                                    {% for choice in form.audience_mode %}
+                                        {{ form_widget(choice, { attr: {
+                                            'data-bo-sale-targeting-target': 'audience',
+                                            'data-action': 'change->bo-sale-targeting#update',
+                                            'data-testid': 'sale-audience-' ~ choice.vars.value,
+                                        } }) }}
+                                    {% endfor %}
+                                </fieldset>
+
+                                <div data-bo-sale-targeting-target="reservedField"
+                                     data-testid="sale-reserved-settings"
+                                     class="{{ form.audience_mode.vars.value == constant('Thelia\\Model\\Sale::AUDIENCE_MODE_CUSTOMERS') ? '' : 'd-none' }}">
+                                    <label class="form-label" for="sale-customers-select">{{ 'Customers this sale is reserved for'|trans }}</label>
+                                    {% if reserved_for_nobody %}
+                                        <div class="alert alert-danger py-2" data-testid="sale-reserved-empty" data-reserved-count="0">
+                                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                            {{ 'Reserved, but no customer is targeted any more: nobody can see this sale. Select customers again, or make it public.'|trans }}
+                                        </div>
+                                    {% else %}
+                                        <div class="form-text mb-1" data-testid="sale-customers-count" data-reserved-count="{{ targeted_count }}">
+                                            {{ 'Currently targeted: %count% customer(s).'|trans({'%count%': targeted_count}) }}
+                                        </div>
+                                    {% endif %}
+                                    {# The picker is only built with the right to view customers, which is
+                                       also the right that puts an e-mail address in the option labels. #}
+                                    {% include '@BackOfficeDefaultTwig/fragments/customer-multiselect.html.twig' with {
+                                        name: 'sale_customers[]',
+                                        choices: customer_choices,
+                                        selected: selected_customer_ids,
+                                        testid: 'sale-customers',
+                                        id: 'sale-customers-select',
+                                        with_email: can_target_customers,
+                                    } only %}
+
+                                    <div class="form-check form-switch mt-3 mb-0">
+                                        {{ form_widget(form.hide_products, { attr: { class: 'form-check-input', 'data-testid': 'sale-hide-products' } }) }}
+                                        {{ form_label(form.hide_products, null, { label_attr: { class: 'form-check-label' } }) }}
+                                        <div class="form-text">{{ 'Otherwise the products stay visible, at their normal price, for everyone else.'|trans }}</div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="alert {{ reserved_for_nobody ? 'alert-danger' : 'alert-warning' }} mb-0"
+                                     data-testid="sale-customers-warning"
+                                     data-reserved-count="{{ sale_is_reserved ? targeted_count : '' }}">
+                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                    {% if reserved_for_nobody %}
+                                        {{ 'Reserved, but no customer is targeted any more: nobody can see this sale. Putting it right needs the permission to view customers.'|trans }}
+                                    {% elseif sale_is_reserved %}
+                                        {{ 'This sale is reserved for %count% customer(s). Changing who it is for needs the permission to view customers, so its current targeting is kept as is when you save.'|trans({'%count%': targeted_count}) }}
+                                    {% else %}
+                                        {{ 'This sale is open to everyone. Reserving it for named customers needs the permission to view customers.'|trans }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -150,13 +272,53 @@
                             <div data-controller="bo-date-range" data-bo-date-range-format-value="Y-m-d H:i:s">
                                 <div class="mb-3">
                                     {{ form_label(form.start_date) }}
-                                    {{ form_widget(form.start_date, { attr: { class: 'form-control', placeholder: 'YYYY-MM-DD HH:mm:ss', 'data-bo-date-range-target': 'start', 'data-action': 'input->bo-date-range#validate' } }) }}
+                                    {{ form_widget(form.start_date, { attr: { class: 'form-control', placeholder: 'YYYY-MM-DD HH:mm:ss', 'data-testid': 'sale-start-date', 'data-bo-date-range-target': 'start', 'data-action': 'input->bo-date-range#validate' } }) }}
                                 </div>
                                 <div class="mb-0">
                                     {{ form_label(form.end_date) }}
-                                    {{ form_widget(form.end_date, { attr: { class: 'form-control', placeholder: 'YYYY-MM-DD HH:mm:ss', 'data-bo-date-range-target': 'end', 'data-action': 'input->bo-date-range#validate' } }) }}
+                                    {{ form_widget(form.end_date, { attr: { class: 'form-control', placeholder: 'YYYY-MM-DD HH:mm:ss', 'data-testid': 'sale-end-date', 'data-bo-date-range-target': 'end', 'data-action': 'input->bo-date-range#validate' } }) }}
                                     <div class="invalid-feedback" data-bo-date-range-target="message" hidden>{{ 'The end date must be after the start date.'|trans }}</div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3" data-testid="sale-countdown-card">
+                        <div class="card-header">{{ 'Countdown'|trans }}</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                {{ form_label(form.countdown_mode) }}
+                                {{ form_widget(form.countdown_mode, { attr: {
+                                    class: 'form-select',
+                                    'data-testid': 'sale-countdown-mode',
+                                    'data-bo-sale-targeting-target': 'countdown',
+                                    'data-action': 'change->bo-sale-targeting#update',
+                                } }) }}
+                                <div class="form-text">{{ 'A countdown needs an end date to count down to.'|trans }}</div>
+                            </div>
+                            <div data-bo-sale-targeting-target="leadHoursField"
+                                 class="mb-0 {{ form.countdown_mode.vars.value == constant('Thelia\\Model\\Sale::COUNTDOWN_MODE_LEAD_HOURS') ? '' : 'd-none' }}">
+                                {% if form.countdown_lead_hours is defined %}
+                                    {# Required for this mode, but never marked required on the input:
+                                       the browser refuses to submit a hidden required field, and the
+                                       field is hidden as soon as another mode is picked. #}
+                                    {{ form_label(form.countdown_lead_hours, null, { required: true }) }}
+                                    {{ form_widget(form.countdown_lead_hours, { attr: { class: 'form-control', min: 1, 'data-testid': 'sale-countdown-lead-hours' } }) }}
+                                {% else %}
+                                    {# The field only exists for this mode, so it is not built when the
+                                       sale is saved with another one. The input still has to be in the
+                                       page for the switch to reveal something: same name, same id. #}
+                                    <label class="form-label required" for="{{ form.vars.id }}_countdown_lead_hours">
+                                        <span class="bo-form-label__text">{{ 'Hours before the end date'|trans }}</span><span class="bo-form-label__required" aria-hidden="true">*</span>
+                                    </label>
+                                    <input type="number"
+                                           class="form-control"
+                                           min="1"
+                                           id="{{ form.vars.id }}_countdown_lead_hours"
+                                           name="{{ form.vars.full_name }}[countdown_lead_hours]"
+                                           value=""
+                                           data-testid="sale-countdown-lead-hours">
+                                {% endif %}
                             </div>
                         </div>
                     </div>

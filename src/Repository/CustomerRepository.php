@@ -432,6 +432,41 @@ final readonly class CustomerRepository
         return (int) (ceil($value / 1000) * 1000);
     }
 
+    /**
+     * @param list<int> $ids
+     *
+     * @return ObjectCollection<int, Customer>
+     */
+    public function findByIds(array $ids): ObjectCollection
+    {
+        if ($ids === []) {
+            /** @var ObjectCollection<int, Customer> $empty */
+            $empty = new ObjectCollection();
+            $empty->setModel(Customer::class);
+
+            return $empty;
+        }
+
+        /** @var ObjectCollection<int, Customer> $rows */
+        $rows = CustomerQuery::create()->filterById($ids, Criteria::IN)->find();
+
+        return $rows;
+    }
+
+    /**
+     * @return ObjectCollection<int, Customer>
+     */
+    public function findLatest(int $limit): ObjectCollection
+    {
+        /** @var ObjectCollection<int, Customer> $rows */
+        $rows = CustomerQuery::create()
+            ->orderByCreatedAt(Criteria::DESC)
+            ->limit($limit)
+            ->find();
+
+        return $rows;
+    }
+
     /** @return array{previous: ?int, next: ?int} */
     public function findPreviousNext(Customer $current): array
     {

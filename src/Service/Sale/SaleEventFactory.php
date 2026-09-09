@@ -14,13 +14,21 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Sale;
 
+use BackOfficeDefaultTwigBundle\Repository\SaleRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Thelia\Core\Event\Sale\SaleCreateEvent;
 use Thelia\Core\Event\Sale\SaleUpdateEvent;
 use Thelia\Model\Sale;
+use Thelia\Model\SaleCustomer;
 
 final readonly class SaleEventFactory
 {
+    public function __construct(
+        private SaleRepository $sales,
+        private SaleCustomerIdsReader $customerIds,
+    ) {
+    }
+
     /**
      * @param array<string, mixed> $formData
      */
@@ -37,6 +45,8 @@ final readonly class SaleEventFactory
      */
     public function updateEvent(int $saleId, array $formData, Request $request, string $fallbackLocale): SaleUpdateEvent
     {
+        $countdownMode = (int) ($formData['countdown_mode'] ?? Sale::COUNTDOWN_MODE_NONE);
+
         $event = new SaleUpdateEvent($saleId);
         $event
             ->setStartDate($this->stringOrNull($formData['start_date'] ?? null))
@@ -52,9 +62,62 @@ final readonly class SaleEventFactory
             ->setSaleLabel((string) ($formData['label'] ?? ''))
             ->setChapo((string) ($formData['chapo'] ?? ''))
             ->setDescription((string) ($formData['description'] ?? ''))
-            ->setPostscriptum((string) ($formData['postscriptum'] ?? ''));
+            ->setPostscriptum((string) ($formData['postscriptum'] ?? ''))
+            ->setCountdownMode($countdownMode)
+            // Only one mode counts hours: any other one clears them, so a stale threshold
+            // cannot come back when the mode is switched again.
+            ->setCountdownLeadHours(
+                $countdownMode === Sale::COUNTDOWN_MODE_LEAD_HOURS
+                    ? $this->intOrNull($formData['countdown_lead_hours'] ?? null)
+                    : null,
+            );
+
+        $this->applyAudience($event, $saleId, $formData, $request);
 
         return $event;
+    }
+
+    /**
+     * Who the sale is for, either as posted or - when the audience was not part of the
+     * form because the admin may not view customers - as currently stored. The core
+     * rewrites the whole targeting on every update, so sending an empty selection here
+     * would silently un-reserve the sale.
+     *
+     * @param array<string, mixed> $formData
+     */
+    private function applyAudience(SaleUpdateEvent $event, int $saleId, array $formData, Request $request): void
+    {
+        if (!\array_key_exists('audience_mode', $formData)) {
+            $sale = $this->sales->findById($saleId);
+            $event
+                ->setAudienceMode((int) ($sale?->getAudienceMode() ?? Sale::AUDIENCE_MODE_PUBLIC))
+                ->setHideProducts((bool) $sale?->getHideProducts())
+                ->setCustomerIds($sale === null ? [] : $this->storedCustomerIds($sale));
+
+            return;
+        }
+
+        $audienceMode = (int) $formData['audience_mode'];
+        $event
+            ->setAudienceMode($audienceMode)
+            ->setHideProducts((bool) ($formData['hide_products'] ?? false))
+            ->setCustomerIds(
+                $audienceMode === Sale::AUDIENCE_MODE_CUSTOMERS ? $this->customerIds->fromRequest($request) : [],
+            );
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function storedCustomerIds(Sale $sale): array
+    {
+        $ids = [];
+        foreach ($sale->getSaleCustomers() as $saleCustomer) {
+            \assert($saleCustomer instanceof SaleCustomer);
+            $ids[] = (int) $saleCustomer->getCustomerId();
+        }
+
+        return $ids;
     }
 
     /**
@@ -101,6 +164,11 @@ final readonly class SaleEventFactory
         }
 
         return $output;
+    }
+
+    private function intOrNull(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) $value : null;
     }
 
     private function stringOrNull(mixed $value): ?string

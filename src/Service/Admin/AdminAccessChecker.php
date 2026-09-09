@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 
 /**
@@ -79,6 +80,16 @@ readonly class AdminAccessChecker
             $this->translator->trans("Sorry, you're not allowed to perform this action"),
             Response::HTTP_FORBIDDEN,
         );
+    }
+
+    /**
+     * A plain yes/no on one resource, for the screens that adapt their content instead of
+     * refusing the whole request: no redirect, no 403, no audit entry - the admin did not
+     * try to do anything they are not allowed to.
+     */
+    public function canView(string $resource): bool
+    {
+        return $this->securityContext->isGranted([self::ADMIN_ROLE], [$resource], [], [AccessManager::VIEW]);
     }
 
     /**

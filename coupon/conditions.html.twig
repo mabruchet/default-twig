@@ -10,7 +10,7 @@
                 'condition-service-id': entry.serviceId,
                 'condition-index': entry.index,
             }),
-        ] ~ (conditions|length > 1 ? [
+        ]|merge(conditions|length > 1 ? [
             row_action('delete', 'Delete this condition'|trans, null, null, null, null, {
                 'condition-index': entry.index,
             }),

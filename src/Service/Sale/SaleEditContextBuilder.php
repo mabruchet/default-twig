@@ -14,12 +14,16 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Sale;
 
+use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
+use BackOfficeDefaultTwigBundle\Service\Customer\CustomerChoiceProvider;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\Category;
 use Thelia\Model\CategoryQuery;
 use Thelia\Model\Currency;
 use Thelia\Model\CurrencyQuery;
 use Thelia\Model\Sale;
+use Thelia\Model\SaleCustomer;
 use Thelia\Model\SaleProduct;
 
 final readonly class SaleEditContextBuilder
@@ -27,6 +31,8 @@ final readonly class SaleEditContextBuilder
     public function __construct(
         private UrlGeneratorInterface $urls,
         private SaleProductAttributesProvider $productAttributesProvider,
+        private CustomerChoiceProvider $customerChoices,
+        private AdminAccessChecker $access,
     ) {
     }
 
@@ -39,12 +45,21 @@ final readonly class SaleEditContextBuilder
      *     selected_product_attributes: array<int, list<int>>,
      *     currencies: list<array{id: int, code: string, symbol: string, offset: float}>,
      *     products_url: string,
-     *     product_attributes_url_template: string
+     *     product_attributes_url_template: string,
+     *     can_target_customers: bool,
+     *     sale_is_reserved: bool,
+     *     customer_choices: list<array{id: int, label: string}>,
+     *     selected_customer_ids: list<int>,
+     *     latest_customers_limit: int
      * }
      */
     public function build(Sale $sale, string $locale): array
     {
         $priceOffsets = $sale->getPriceOffsets();
+        $selectedCustomerIds = $this->targetedCustomerIds($sale);
+        // Names and e-mail addresses are personal data: an admin who may not view the
+        // customer list is not handed one here either.
+        $canTargetCustomers = $this->canTargetCustomers();
 
         $selectedCategoryIds = [];
         $selectedProducts = [];
@@ -80,6 +95,10 @@ final readonly class SaleEditContextBuilder
                 'start_date' => $sale->getStartDate('Y-m-d H:i:s'),
                 'end_date' => $sale->getEndDate('Y-m-d H:i:s'),
                 'price_offset_type' => (int) $sale->getPriceOffsetType(),
+                'audience_mode' => (int) $sale->getAudienceMode(),
+                'hide_products' => (bool) $sale->getHideProducts(),
+                'countdown_mode' => (int) $sale->getCountdownMode(),
+                'countdown_lead_hours' => $sale->getCountdownLeadHours(),
             ],
             'all_categories' => $this->categoryChoices($locale),
             'selected_category_ids' => $selectedCategoryIds,
@@ -91,7 +110,35 @@ final readonly class SaleEditContextBuilder
                 'admin.sale.product-attributes',
                 ['product_id' => 0],
             ),
+            'can_target_customers' => $canTargetCustomers,
+            // The stored audience, next to the ids it currently names: a reserved sale
+            // whose last targeted customer was deleted keeps the mode and loses the
+            // audience, and the screen has to be able to say so. Read as its own key
+            // because the controller replaces the `sale` entry with the model itself.
+            'sale_is_reserved' => $sale->isReserved(),
+            'customer_choices' => $canTargetCustomers ? $this->customerChoices->choices($selectedCustomerIds) : [],
+            'selected_customer_ids' => $selectedCustomerIds,
+            'latest_customers_limit' => CustomerChoiceProvider::LATEST_LIMIT,
         ];
+    }
+
+    public function canTargetCustomers(): bool
+    {
+        return $this->access->canView(AdminResources::CUSTOMER);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function targetedCustomerIds(Sale $sale): array
+    {
+        $ids = [];
+        foreach ($sale->getSaleCustomers() as $saleCustomer) {
+            \assert($saleCustomer instanceof SaleCustomer);
+            $ids[] = (int) $saleCustomer->getCustomerId();
+        }
+
+        return $ids;
     }
 
     /**
