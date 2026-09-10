@@ -1,10 +1,28 @@
+{#
+    Category filter + multiple product select.
+
+    Defaults reproduce the historical "applicable products" picker; every coupon
+    type that needs the same widget under another field name overrides these:
+        picker_id                base of the element ids (default coupon-products)
+        products_field_name      name of the multi select (default coupon_specific[products][])
+        category_field_name      name of the category filter (default coupon_specific[category_id])
+        products_label           label of the multi select
+        picker_disabled          render both controls disabled, so a picker hidden
+                                 behind another choice submits nothing
+#}
+{% set picker_id = picker_id|default('coupon-products') %}
+{% set products_field_name = products_field_name|default('coupon_specific[products][]') %}
+{% set category_field_name = category_field_name|default('coupon_specific[category_id]') %}
+{% set products_label = products_label|default('Applicable products'|trans) %}
+{% set picker_disabled = picker_disabled|default(false) %}
 <div data-controller="bo-coupon-product-picker"
      data-bo-coupon-product-picker-data-value="{{ products_by_category|json_encode|e('html_attr') }}"
-     data-testid="coupon-products-picker">
+     data-testid="{{ picker_id }}-picker">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <label for="coupon-category" class="form-label">{{ 'Filter by category'|trans }}</label>
-            <select id="coupon-category" class="form-select" name="coupon_specific[category_id]"
+            <label for="{{ picker_id }}-category" class="form-label">{{ 'Filter by category'|trans }}</label>
+            <select id="{{ picker_id }}-category" class="form-select" name="{{ category_field_name }}"
+                    {% if picker_disabled %}disabled{% endif %}
                     data-bo-coupon-product-picker-target="category"
                     data-action="change->bo-coupon-product-picker#onCategoryChangeMulti">
                 <option value="">- {{ 'All products'|trans }} -</option>
@@ -14,11 +32,13 @@
             </select>
         </div>
         <div class="col-md-6 mb-3">
-            <label for="coupon-products" class="form-label">{{ 'Applicable products'|trans }}</label>
-            <select id="coupon-products" class="form-select" name="coupon_specific[products][]" multiple size="8"
+            <label for="{{ picker_id }}" class="form-label">{{ products_label }}</label>
+            <select id="{{ picker_id }}" class="form-select" name="{{ products_field_name }}" multiple size="8"
+                    {% if picker_disabled %}disabled{% endif %}
                     data-bo-coupon-product-picker-target="productMulti"
+                    data-action="change->bo-coupon-product-picker#onSelectionChange"
                     data-bo-coupon-product-picker-initial-multi-value="{{ selected_products|json_encode|e('html_attr') }}"
-                    data-testid="coupon-products-select">
+                    data-testid="{{ picker_id }}-select">
                 {% for catProducts in products_by_category %}
                     {% for product in catProducts %}
                         <option value="{{ product.id }}" {% if product.id in selected_products %}selected{% endif %}>{{ product.title }}</option>

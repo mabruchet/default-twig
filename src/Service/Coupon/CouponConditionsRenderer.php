@@ -28,6 +28,7 @@ use Thelia\Condition\Implementation\CartContainsCategories;
 use Thelia\Condition\Implementation\CartContainsProducts;
 use Thelia\Condition\Implementation\ConditionInterface;
 use Thelia\Condition\Implementation\ForSomeCustomers;
+use Thelia\Condition\Implementation\MatchDeliveryModules;
 use Thelia\Condition\Implementation\MatchForEveryone;
 use Thelia\Condition\Implementation\MatchForTotalAmount;
 use Thelia\Condition\Implementation\MatchForXArticles;
@@ -35,7 +36,9 @@ use Thelia\Condition\Implementation\StartDate;
 use Thelia\Model\CategoryQuery;
 use Thelia\Model\CurrencyQuery;
 use Thelia\Model\LangQuery;
+use Thelia\Model\ModuleQuery;
 use Thelia\Model\ProductQuery;
+use Thelia\Module\BaseModule;
 use Twig\Environment;
 
 /**
@@ -148,6 +151,7 @@ final readonly class CouponConditionsRenderer
             $condition instanceof MatchForTotalAmount => '@BackOfficeDefaultTwig/coupon/condition-fragments/cart-total-amount-condition.html.twig',
             $condition instanceof MatchForXArticles => '@BackOfficeDefaultTwig/coupon/condition-fragments/cart-item-count-condition.html.twig',
             $condition instanceof ForSomeCustomers => '@BackOfficeDefaultTwig/coupon/condition-fragments/customers-condition.html.twig',
+            $condition instanceof MatchDeliveryModules => '@BackOfficeDefaultTwig/coupon/condition-fragments/delivery-modules-condition.html.twig',
             $condition instanceof AbstractMatchCountries => '@BackOfficeDefaultTwig/coupon/condition-fragments/countries-condition.html.twig',
             $condition instanceof CartContainsCategories => '@BackOfficeDefaultTwig/coupon/condition-fragments/cart-contains-categories-condition.html.twig',
             $condition instanceof CartContainsProducts => '@BackOfficeDefaultTwig/coupon/condition-fragments/cart-contains-products-condition.html.twig',
@@ -197,6 +201,11 @@ final readonly class CouponConditionsRenderer
                 'selected_values' => $this->normalizeIdList($setValues[AbstractMatchCountries::COUNTRIES_LIST] ?? []),
                 'countries_choices' => $this->countryChoices($locale),
                 'country_label' => $this->countryLabelFor($condition),
+            ]),
+            $condition instanceof MatchDeliveryModules => array_merge($params, [
+                'field_name' => MatchDeliveryModules::MODULES_LIST,
+                'selected_values' => $this->normalizeIdList($setValues[MatchDeliveryModules::MODULES_LIST] ?? []),
+                'delivery_modules_choices' => $this->deliveryModuleChoices($locale),
             ]),
             $condition instanceof ForSomeCustomers => array_merge($params, [
                 'field_name' => ForSomeCustomers::CUSTOMERS_LIST,
@@ -264,6 +273,25 @@ final readonly class CouponConditionsRenderer
             ];
             $this->walkCategoryTree((int) $category->getId(), $level + 1, $locale, $tree);
         }
+    }
+
+    /** @return list<array{id: int, label: string}> */
+    private function deliveryModuleChoices(string $locale): array
+    {
+        $choices = [];
+        $modules = ModuleQuery::create()
+            ->filterByActivate(BaseModule::IS_ACTIVATED)
+            ->filterByType(BaseModule::DELIVERY_MODULE_TYPE)
+            ->find();
+
+        foreach ($modules as $module) {
+            $module->setLocale($locale);
+            $choices[] = ['id' => (int) $module->getId(), 'label' => (string) $module->getTitle()];
+        }
+
+        usort($choices, static fn (array $a, array $b): int => strcasecmp($a['label'], $b['label']));
+
+        return $choices;
     }
 
     /** @return list<array{id: int, label: string}> */

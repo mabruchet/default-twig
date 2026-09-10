@@ -1,0 +1,10 @@
+{% include '@BackOfficeDefaultTwig/coupon/condition-fragments/_multiselect_condition.html.twig' with {
+    field_name: field_name,
+    label: 'Delivery method is :'|trans,
+    choices: delivery_modules_choices,
+    selected_values: selected_values,
+    available_operators: available_operators,
+    validators: validators,
+    testid: 'coupon-delivery-modules',
+    help: 'Use Ctrl+click to select (or deselect) more than one delivery method.'|trans,
+} only %}

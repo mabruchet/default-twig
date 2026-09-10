@@ -1,7 +1,23 @@
-<div class="mb-3" data-testid="coupon-categories-picker">
-    <label for="coupon-categories" class="form-label">{{ 'Applicable categories'|trans }}</label>
-    <select id="coupon-categories" class="form-select" name="coupon_specific[categories][]" multiple size="8"
-            data-testid="coupon-categories-select">
+{#
+    Multiple category select.
+
+    Defaults reproduce the historical "applicable categories" picker; overridable
+    the same way as _products_picker:
+        picker_id                  base of the element ids (default coupon-categories)
+        categories_field_name      name of the multi select (default coupon_specific[categories][])
+        categories_label           label of the multi select
+        picker_disabled            render the control disabled, so a picker hidden
+                                   behind another choice submits nothing
+#}
+{% set picker_id = picker_id|default('coupon-categories') %}
+{% set categories_field_name = categories_field_name|default('coupon_specific[categories][]') %}
+{% set categories_label = categories_label|default('Applicable categories'|trans) %}
+{% set picker_disabled = picker_disabled|default(false) %}
+<div class="mb-3" data-testid="{{ picker_id }}-picker">
+    <label for="{{ picker_id }}" class="form-label">{{ categories_label }}</label>
+    <select id="{{ picker_id }}" class="form-select" name="{{ categories_field_name }}" multiple size="8"
+            {% if picker_disabled %}disabled{% endif %}
+            data-testid="{{ picker_id }}-select">
         {% for cat in categories %}
             <option value="{{ cat.id }}" {% if cat.id in selected_categories %}selected{% endif %}>{{ cat.title }}</option>
         {% endfor %}

@@ -1,0 +1,177 @@
+{#
+    "Buy X, get Y" inputs. Field names must stay in sync with
+    Thelia\Domain\Promotion\Coupon\Type\BuyXGetY::getFieldList().
+
+    Every picker that belongs to a choice the merchant has not made is rendered
+    disabled, not just hidden: a disabled control submits nothing, so the two
+    product pickers can share the coupon_specific[trigger_ids][] name without
+    fighting over it, and the rule still holds when JavaScript is off.
+#}
+{% set preview_labels = {
+    empty: 'Fill in the fields above to see the rule in plain words.'|trans,
+    pattern: 'For every %quantity% item(s) %scope%, %offered_quantity% %target% %discount%.'|trans,
+    scope_product: 'of the selected product'|trans,
+    scope_category: 'from the selected categories'|trans,
+    scope_selection: 'from the product selection'|trans,
+    target_same: 'item(s) of the same products'|trans,
+    target_cheapest: 'of the cheapest item(s) of the lot'|trans,
+    target_product: 'unit(s) of the offered product'|trans,
+    discount_free: 'are offered'|trans,
+    discount_percentage: 'get a %value% percent discount'|trans,
+    discount_amount: 'get a %value% %currency% discount each'|trans,
+} %}
+<div data-controller="bo-coupon-buy-x-get-y"
+     data-bo-coupon-buy-x-get-y-labels-value="{{ preview_labels|json_encode|e('html_attr') }}"
+     data-bo-coupon-buy-x-get-y-currency-value="{{ currency_symbol|default('') }}"
+     data-testid="coupon-buy-x-get-y">
+
+    <h6 class="text-uppercase small text-muted mt-2">{{ 'Triggering lot'|trans }}</h6>
+
+    <div class="mb-3">
+        <span class="form-label d-block">{{ 'What triggers the offer'|trans }}</span>
+        {% for scope in [
+            { value: 'product', label: 'One product'|trans },
+            { value: 'category', label: 'One or more categories'|trans },
+            { value: 'selection', label: 'A selection of products'|trans }
+        ] %}
+            <div class="form-check form-check-inline">
+                <input id="buy-x-get-y-scope-{{ scope.value }}" type="radio" class="form-check-input"
+                       name="coupon_specific[trigger_scope]" value="{{ scope.value }}"
+                       {% if trigger_scope_value == scope.value %}checked{% endif %}
+                       data-bo-coupon-buy-x-get-y-target="scopeRadio"
+                       data-action="change->bo-coupon-buy-x-get-y#onScopeChange"
+                       data-testid="coupon-buy-x-get-y-scope-{{ scope.value }}">
+                <label class="form-check-label" for="buy-x-get-y-scope-{{ scope.value }}">{{ scope.label }}</label>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3" data-bo-coupon-buy-x-get-y-target="scopeProduct" {% if trigger_scope_value != 'product' %}hidden{% endif %}>
+        <label for="buy-x-get-y-trigger-product" class="form-label">{{ 'Triggering product'|trans }}</label>
+        <select id="buy-x-get-y-trigger-product" class="form-select" name="coupon_specific[trigger_ids][]"
+                {% if trigger_scope_value != 'product' %}disabled{% endif %}
+                data-bo-coupon-buy-x-get-y-target="scopeProductInput"
+                data-testid="coupon-buy-x-get-y-trigger-product">
+            <option value="">- {{ 'Select a product'|trans }} -</option>
+            {% for product in products|default([]) %}
+                <option value="{{ product.id }}" {% if product.id in trigger_ids_values %}selected{% endif %}>{{ product.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div data-bo-coupon-buy-x-get-y-target="scopeCategory" {% if trigger_scope_value != 'category' %}hidden{% endif %}>
+        {% include '@BackOfficeDefaultTwig/coupon/type-fragments/_categories_picker.html.twig' with {
+            categories: categories|default([]),
+            selected_categories: trigger_ids_values,
+            picker_id: 'buy-x-get-y-trigger-categories',
+            categories_field_name: 'coupon_specific[trigger_ids][]',
+            categories_label: 'Triggering categories'|trans,
+            picker_disabled: trigger_scope_value != 'category',
+        } only %}
+    </div>
+
+    <div data-bo-coupon-buy-x-get-y-target="scopeSelection" {% if trigger_scope_value != 'selection' %}hidden{% endif %}>
+        {% include '@BackOfficeDefaultTwig/coupon/type-fragments/_products_picker.html.twig' with {
+            categories: categories|default([]),
+            products_by_category: products_by_category|default({}),
+            selected_products: trigger_ids_values,
+            picker_id: 'buy-x-get-y-trigger-products',
+            products_field_name: 'coupon_specific[trigger_ids][]',
+            category_field_name: 'buy_x_get_y_trigger_category_filter',
+            products_label: 'Triggering products'|trans,
+            picker_disabled: trigger_scope_value != 'selection',
+        } only %}
+    </div>
+
+    <div class="mb-3">
+        <label for="buy-x-get-y-trigger-quantity" class="form-label">{{ 'Quantity needed to trigger the offer'|trans }} *</label>
+        <input id="buy-x-get-y-trigger-quantity" type="number" min="1" step="1" class="form-control"
+               name="coupon_specific[trigger_quantity]" value="{{ trigger_quantity_value|default(1) }}"
+               data-bo-coupon-buy-x-get-y-target="triggerQuantity"
+               data-action="input->bo-coupon-buy-x-get-y#refreshPreview"
+               data-testid="coupon-buy-x-get-y-trigger-quantity">
+        <small class="form-text text-muted">{{ 'The offer applies once per complete lot found in the cart.'|trans }}</small>
+    </div>
+
+    <hr>
+
+    <h6 class="text-uppercase small text-muted">{{ 'What is offered'|trans }}</h6>
+
+    <div class="mb-3">
+        {% for target in [
+            { value: 'same', label: 'Items of the triggering products'|trans },
+            { value: 'cheapest', label: 'The cheapest items of the lot'|trans },
+            { value: 'product', label: 'Another product'|trans }
+        ] %}
+            <div class="form-check form-check-inline">
+                <input id="buy-x-get-y-target-{{ target.value }}" type="radio" class="form-check-input"
+                       name="coupon_specific[target_mode]" value="{{ target.value }}"
+                       {% if target_mode_value == target.value %}checked{% endif %}
+                       data-bo-coupon-buy-x-get-y-target="targetModeRadio"
+                       data-action="change->bo-coupon-buy-x-get-y#onTargetModeChange"
+                       data-testid="coupon-buy-x-get-y-target-{{ target.value }}">
+                <label class="form-check-label" for="buy-x-get-y-target-{{ target.value }}">{{ target.label }}</label>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3" data-bo-coupon-buy-x-get-y-target="targetProductWrap" {% if target_mode_value != 'product' %}hidden{% endif %}>
+        <label for="buy-x-get-y-target-product" class="form-label">{{ 'Offered product'|trans }} *</label>
+        <select id="buy-x-get-y-target-product" class="form-select" name="coupon_specific[target_product_id]"
+                {% if target_mode_value != 'product' %}disabled{% endif %}
+                data-bo-coupon-buy-x-get-y-target="targetProductInput"
+                data-testid="coupon-buy-x-get-y-target-product">
+            <option value="">- {{ 'Select a product'|trans }} -</option>
+            {% for product in products|default([]) %}
+                <option value="{{ product.id }}" {% if target_product_id_value == product.id %}selected{% endif %}>{{ product.title }}</option>
+            {% endfor %}
+        </select>
+        <small class="form-text text-muted">{{ 'The offered line is added to the cart on its own, and cannot be changed by the buyer.'|trans }}</small>
+    </div>
+
+    <div class="mb-3">
+        <label for="buy-x-get-y-offered-quantity" class="form-label">{{ 'Offered quantity per lot'|trans }} *</label>
+        <input id="buy-x-get-y-offered-quantity" type="number" min="1" step="1" class="form-control"
+               name="coupon_specific[offered_quantity]" value="{{ offered_quantity_value|default(1) }}"
+               data-bo-coupon-buy-x-get-y-target="offeredQuantity"
+               data-action="input->bo-coupon-buy-x-get-y#refreshPreview"
+               data-testid="coupon-buy-x-get-y-offered-quantity">
+    </div>
+
+    <hr>
+
+    <h6 class="text-uppercase small text-muted">{{ 'Discount applied to what is offered'|trans }}</h6>
+
+    <div class="mb-3">
+        {% for discount in [
+            { value: 'free', label: 'Free'|trans },
+            { value: 'percentage', label: 'Percentage off'|trans },
+            { value: 'amount', label: 'Amount off'|trans }
+        ] %}
+            <div class="form-check form-check-inline">
+                <input id="buy-x-get-y-discount-{{ discount.value }}" type="radio" class="form-check-input"
+                       name="coupon_specific[discount_type]" value="{{ discount.value }}"
+                       {% if discount_type_value == discount.value %}checked{% endif %}
+                       data-bo-coupon-buy-x-get-y-target="discountTypeRadio"
+                       data-action="change->bo-coupon-buy-x-get-y#onDiscountTypeChange"
+                       data-testid="coupon-buy-x-get-y-discount-{{ discount.value }}">
+                <label class="form-check-label" for="buy-x-get-y-discount-{{ discount.value }}">{{ discount.label }}</label>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3" data-bo-coupon-buy-x-get-y-target="discountValueWrap" {% if discount_type_value == 'free' %}hidden{% endif %}>
+        <label for="buy-x-get-y-discount-value" class="form-label">{{ 'Discount value'|trans }} *</label>
+        <div class="input-group">
+            {# max is left to the controller: it is 100 for a percentage and unbounded for an amount. #}
+            <input id="buy-x-get-y-discount-value" type="number" step="0.01" min="0" class="form-control"
+                   name="coupon_specific[discount_value]" value="{{ discount_value_value|default('') }}"
+                   data-bo-coupon-buy-x-get-y-target="discountValue"
+                   data-action="input->bo-coupon-buy-x-get-y#refreshPreview"
+                   data-testid="coupon-buy-x-get-y-discount-value">
+            <span class="input-group-text" data-bo-coupon-buy-x-get-y-target="discountUnit">{{ discount_type_value == 'amount' ? currency_symbol|default('') : '%' }}</span>
+        </div>
+    </div>
+
+    <div class="alert alert-secondary small mb-0" data-bo-coupon-buy-x-get-y-target="preview" data-testid="coupon-buy-x-get-y-preview"></div>
+</div>

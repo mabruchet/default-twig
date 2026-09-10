@@ -1,0 +1,46 @@
+{#
+    Operator + searchable multiple select: the shape shared by every condition
+    that matches a cart against a list of ids.
+
+    Parameters:
+        field_name           name of the condition field (posts [operator] and [value][])
+        label                label above the control
+        choices              list of { id, label } to pick from
+        selected_values      ids currently set on the condition
+        available_operators  map of field name => list of { value, label }
+        validators           the condition values, read for its current operator
+        testid               base of the data-testid attributes
+        help                 sentence under the select
+#}
+{% set selected_operator = validators.setOperators[field_name] ?? 'in' %}
+<div class="mb-3" data-controller="bo-multiselect-search">
+    <label class="form-label">{{ label }}</label>
+    <div class="row g-2">
+        <div class="col-md-4">
+            <select class="form-select" name="{{ field_name }}[operator]">
+                {% for op in available_operators[field_name] ?? [] %}
+                    <option value="{{ op.value }}" {{ op.value == selected_operator ? 'selected' : '' }}>{{ op.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-8">
+            <input type="search"
+                   class="form-control mb-2"
+                   placeholder="{{ 'Filter…'|trans }}"
+                   data-bo-multiselect-search-target="input"
+                   data-action="input->bo-multiselect-search#filter"
+                   data-testid="{{ testid }}-filter">
+            <select required multiple
+                    size="8"
+                    class="form-select"
+                    name="{{ field_name }}[value][]"
+                    data-bo-multiselect-search-target="select"
+                    data-testid="{{ testid }}-select">
+                {% for choice in choices %}
+                    <option value="{{ choice.id }}" {{ choice.id in selected_values ? 'selected' : '' }}>{{ choice.label }}</option>
+                {% endfor %}
+            </select>
+            <span class="form-text small">{{ help }}</span>
+        </div>
+    </div>
+</div>
