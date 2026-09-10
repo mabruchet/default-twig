@@ -19,6 +19,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Coupon\CouponConditionsRenderer;
 use BackOfficeDefaultTwigBundle\Service\Coupon\CouponEditContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Coupon\CouponInputsRenderer;
+use BackOfficeDefaultTwigBundle\Service\Coupon\CouponTriggerModeInput;
 use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\ListSort;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
@@ -42,7 +43,6 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Promotion\Coupon\CouponFactory;
 use Thelia\Domain\Promotion\Coupon\Service\CouponManager;
-use Thelia\Domain\Promotion\Coupon\Type\CouponInterface;
 use Thelia\Model\Coupon;
 use Thelia\Model\CouponCountry;
 use Thelia\Model\CouponModule;
@@ -61,6 +61,7 @@ final class CouponController
     private const EDIT_TEMPLATE = '@BackOfficeDefaultTwig/coupon/edit.html.twig';
     private const CONDITIONS_TEMPLATE = '@BackOfficeDefaultTwig/coupon/conditions.html.twig';
     private const PAGE_SIZE = 25;
+    private const MODE_FILTER_ALL = 'all';
 
     public function __construct(
         private readonly AdminFormAction $action,
@@ -93,7 +94,12 @@ final class CouponController
         $sort = ListSort::fromRequest($request, ['id', 'code', 'title', 'is_enabled', 'expiration_date'], 'code');
         $criteria = strtoupper($sort->direction) === 'DESC' ? Criteria::DESC : Criteria::ASC;
 
+        $modeFilter = $this->modeFilter($request);
+
         $query = CouponQuery::create();
+        if ($modeFilter !== self::MODE_FILTER_ALL) {
+            $query->filterByTriggerMode($modeFilter);
+        }
         match ($sort->field) {
             'id' => $query->orderById($criteria),
             'is_enabled' => $query->orderByIsEnabled($criteria),
@@ -122,6 +128,8 @@ final class CouponController
             'current_page' => $page,
             'sort_field' => $sort->field,
             'sort_direction' => $sort->direction,
+            'current_mode' => $modeFilter,
+            'mode_filter_choices' => $this->modeFilterChoices(),
         ]));
     }
 
@@ -400,9 +408,14 @@ final class CouponController
         }
 
         $serviceId = urldecode((string) ($data['type'] ?? ''));
-        $couponTypeManager = $this->findCouponType($serviceId);
+        $couponTypeManager = $this->contextBuilder->couponTypeByServiceId($serviceId);
         if ($couponTypeManager === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
+        }
+
+        $triggerMode = CouponTriggerModeInput::fromPostedData($data);
+        if (($modeError = $triggerMode->validationError($this->translator)) !== null) {
+            return $this->renderWithError($request, $coupon, $modeError);
         }
 
         // CouponAbstract::getCouponFieldValue() expects a JSON-encoded string
@@ -418,9 +431,9 @@ final class CouponController
         }
 
         $event = new CouponCreateOrUpdateEvent(
-            (string) ($data['code'] ?? ''),
+            $triggerMode->code,
             $serviceId,
-            (string) ($data['title'] ?? ''),
+            $triggerMode->title,
             $effects,
             $this->nullable($data['shortDescription'] ?? null),
             $this->nullable($data['description'] ?? null),
@@ -436,6 +449,8 @@ final class CouponController
             ((int) ($data['perCustomerUsageCount'] ?? 0)) === 1,
             $start,
         );
+
+        $event->setTriggerMode($triggerMode->triggerMode);
 
         if ($coupon !== null) {
             $event->setCouponModel($coupon);
@@ -464,9 +479,13 @@ final class CouponController
         $context = $coupon === null
             ? $this->contextBuilder->buildForCreate($locale)
             : $this->contextBuilder->buildForUpdate($coupon, $locale);
+
+        // Re-render the screen as it was submitted, not as the database still
+        // holds it: nothing the merchant typed is thrown away by a refusal, and
+        // the fields the message is about are the ones in front of them.
+        $context = $this->contextBuilder->applyPostedData($context, $request->request->all());
         $context['edit_language_id'] = (int) $editLang->getId();
         $context['error_message'] = $message;
-        $context['posted'] = $request->request->all();
 
         return new Response($this->twig->render(self::EDIT_TEMPLATE, $context));
     }
@@ -485,7 +504,7 @@ final class CouponController
         }
 
         $event = new CouponCreateOrUpdateEvent(
-            (string) $coupon->getCode(),
+            $coupon->getCode(),
             (string) $coupon->getType(),
             (string) $coupon->getTitle(),
             $coupon->getEffects(),
@@ -503,6 +522,7 @@ final class CouponController
             (bool) $coupon->getPerCustomerUsageCount(),
             $coupon->getStartDate(),
         );
+        $event->setTriggerMode((string) $coupon->getTriggerMode());
         $event->setCouponModel($coupon);
         $event->setConditions($conditions);
 
@@ -518,15 +538,19 @@ final class CouponController
     {
         $id = (int) $coupon->getId();
         $editHref = $this->urls->generate(self::EDIT_ROUTE, ['couponId' => $id]);
+        // An automatic promotion has no code: it is identified by its title.
+        $rowLabel = (string) $coupon->getCode() !== '' ? (string) $coupon->getCode() : (string) $coupon->getTitle();
         $actions = [
             new RowAction(kind: 'edit', label: $this->translator->trans('Edit'), href: $editHref, grantedAttribute: AccessManager::UPDATE, grantedSubject: self::RESOURCE),
-            new RowAction(kind: 'delete', label: $this->translator->trans('Delete'), modalTarget: '#coupon-delete-modal', grantedAttribute: AccessManager::DELETE, grantedSubject: self::RESOURCE, dataAttributes: ['coupon-id' => $id, 'coupon-label' => (string) $coupon->getCode()]),
+            new RowAction(kind: 'delete', label: $this->translator->trans('Delete'), modalTarget: '#coupon-delete-modal', grantedAttribute: AccessManager::DELETE, grantedSubject: self::RESOURCE, dataAttributes: ['coupon-id' => $id, 'coupon-label' => $rowLabel]),
         ];
 
         return [
             'id' => $id,
-            'code' => (string) $coupon->getCode(),
+            'code' => (string) $coupon->getCode() !== '' ? (string) $coupon->getCode() : '—',
             'title' => (string) $coupon->getTitle(),
+            'mode' => (string) $coupon->getTriggerMode(),
+            'mode_label' => $this->modeLabel($coupon),
             'type' => $typeLabels[$coupon->getType()] ?? (string) $coupon->getType(),
             'enabled' => (bool) $coupon->getIsEnabled(),
             'enabled_label' => $coupon->getIsEnabled() ? $this->translator->trans('Enabled') : $this->translator->trans('Disabled'),
@@ -538,15 +562,35 @@ final class CouponController
         ];
     }
 
-    private function findCouponType(string $serviceId): ?CouponInterface
+    /**
+     * @return self::MODE_FILTER_ALL|Coupon::TRIGGER_MODE_CODE|Coupon::TRIGGER_MODE_AUTOMATIC
+     */
+    private function modeFilter(Request $request): string
     {
-        foreach ($this->couponManager->getAvailableCoupons() as $type) {
-            if ($type instanceof CouponInterface && $type->getServiceId() === $serviceId) {
-                return $type;
-            }
-        }
+        $requested = (string) $request->query->get('mode', self::MODE_FILTER_ALL);
 
-        return null;
+        return match ($requested) {
+            Coupon::TRIGGER_MODE_CODE => Coupon::TRIGGER_MODE_CODE,
+            Coupon::TRIGGER_MODE_AUTOMATIC => Coupon::TRIGGER_MODE_AUTOMATIC,
+            default => self::MODE_FILTER_ALL,
+        };
+    }
+
+    /** @return list<array{value: string, label: string}> */
+    private function modeFilterChoices(): array
+    {
+        return [
+            ['value' => self::MODE_FILTER_ALL, 'label' => $this->translator->trans('All coupons and promotions')],
+            ['value' => Coupon::TRIGGER_MODE_CODE, 'label' => $this->translator->trans('With a code')],
+            ['value' => Coupon::TRIGGER_MODE_AUTOMATIC, 'label' => $this->translator->trans('Automatic')],
+        ];
+    }
+
+    private function modeLabel(Coupon $coupon): string
+    {
+        return $coupon->isAutomatic()
+            ? $this->translator->trans('Automatic')
+            : $this->translator->trans('With a code');
     }
 
     /** @return array<string, string> */

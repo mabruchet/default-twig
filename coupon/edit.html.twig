@@ -3,8 +3,10 @@
 {% set is_update = mode == 'update' %}
 {% set form_action = is_update ? path('admin.coupon.update', { couponId: coupon_id }) : path('admin.coupon.create') %}
 {% set page_title = is_update ? ('Update coupon'|trans) : ('Create coupon'|trans) %}
+{# An automatic promotion has no code: it is named by its title, as in the list. #}
+{% set coupon_label = data.code ?: data.title %}
 
-{% block title %}{{ page_title }}{% if is_update %} - {{ data.code }}{% endif %}{% endblock %}
+{% block title %}{{ page_title }}{% if is_update %} - {{ coupon_label }}{% endif %}{% endblock %}
 {% block body_testid %}coupon-edit{% endblock %}
 
 {% block breadcrumb %}
@@ -13,7 +15,7 @@
             <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
             <li class="breadcrumb-item"><a href="{{ path('admin.coupon.default') }}">{{ 'Coupons'|trans }}</a></li>
             <li class="breadcrumb-item active" aria-current="page">
-                {% if is_update %}{{ 'Editing coupon "%title"'|trans({'%title': data.code}) }}{% else %}{{ 'Create'|trans }}{% endif %}
+                {% if is_update %}{{ 'Editing coupon "%title"'|trans({'%title': coupon_label}) }}{% else %}{{ 'Create'|trans }}{% endif %}
             </li>
         </ol>
     </nav>
@@ -30,6 +32,7 @@
          data-testid="coupon-edit-page"
          data-controller="bo-coupon-form"
          data-bo-coupon-form-draw-inputs-url-value="{{ path('admin.coupon.draw.inputs.ajax', { couponServiceId: '__SERVICE__' }) }}"
+         data-bo-coupon-form-automatic-mode-value="{{ trigger_mode_automatic }}"
          {% if is_update %}
          data-bo-coupon-form-coupon-id-value="{{ coupon_id }}"
          data-bo-coupon-form-save-condition-url-value="{{ path('admin.coupon.condition.save', { couponId: coupon_id }) ~ '?_token=' ~ assignToken() }}"
@@ -60,12 +63,42 @@
 
             <div class="card mb-3">
                 <div class="card-body">
+                    {% set is_automatic = data.triggerMode == trigger_mode_automatic %}
+                    <fieldset class="mb-3" data-testid="coupon-trigger-mode">
+                        <legend class="form-label mb-2">{{ 'How is this promotion triggered?'|trans }}</legend>
+                        <div class="d-flex flex-wrap gap-4">
+                            {% for choice in trigger_mode_choices %}
+                                <div class="form-check">
+                                    <input id="trigger-mode-{{ choice.value }}"
+                                           type="radio"
+                                           class="form-check-input"
+                                           name="trigger_mode"
+                                           value="{{ choice.value }}"
+                                           {% if data.triggerMode == choice.value %}checked{% endif %}
+                                           data-bo-coupon-form-target="triggerModeRadio"
+                                           data-action="change->bo-coupon-form#onTriggerModeChange"
+                                           data-testid="coupon-trigger-mode-{{ choice.value }}">
+                                    <label class="form-check-label" for="trigger-mode-{{ choice.value }}">
+                                        {{ choice.label }}
+                                        <small class="d-block text-muted">{{ choice.help }}</small>
+                                        {% if choice.note %}
+                                            <small class="d-block text-muted" data-testid="coupon-trigger-mode-{{ choice.value }}-note">{{ choice.note }}</small>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <div class="mb-3">
+                            <div class="mb-3" data-bo-coupon-form-target="codeWrap" {% if is_automatic %}hidden{% endif %}>
                                 <label class="form-label" for="coupon-code">{{ 'Coupon code'|trans }} *</label>
-                                <input id="coupon-code" required type="text" class="form-control" name="code" value="{{ data.code }}" placeholder="{{ 'code'|trans }}">
+                                <input id="coupon-code" {% if not is_automatic %}required{% endif %} type="text" class="form-control" name="code" value="{{ data.code }}" placeholder="{{ 'code'|trans }}" data-bo-coupon-form-target="codeInput">
                                 <small class="form-text text-muted">{{ 'This is the code entered by your customers to use this coupon'|trans }}</small>
+                            </div>
+                            <div class="alert alert-info py-2 small mb-3" data-bo-coupon-form-target="automaticHelp" {% if not is_automatic %}hidden{% endif %} data-testid="coupon-automatic-help">
+                                {{ 'No code to type: fill in the title, it is the public label shown to the buyer, and it is required.'|trans }}
                             </div>
                         </div>
                         <div class="col-md-9">

@@ -2,6 +2,8 @@ import { Controller } from '@hotwired/stimulus';
 
 /**
  * Drives the coupon edit form interactions:
+ *  - Trigger mode radios → show or hide the code field, which is only required
+ *    for a coupon with a code (an automatic promotion has none).
  *  - Coupon type select → AJAX fetch the inputs partial.
  *  - Free shipping checkbox → toggle the postage card.
  *  - Unlimited checkbox → toggle the max-usage card.
@@ -9,6 +11,10 @@ import { Controller } from '@hotwired/stimulus';
  */
 export default class extends Controller {
     static targets = [
+        'triggerModeRadio',
+        'codeWrap',
+        'codeInput',
+        'automaticHelp',
         'typeSelect',
         'typeTooltip',
         'inputsContainer',
@@ -33,12 +39,36 @@ export default class extends Controller {
         deleteConditionUrl: String,
         deleteConfirm: String,
         everyoneConfirm: String,
+        // Thelia\Model\Coupon::TRIGGER_MODE_AUTOMATIC, handed over by the
+        // template: the value lives in PHP and is not spelled out twice.
+        automaticMode: String,
     };
 
     static everyoneServiceId = 'thelia.condition.match_for_everyone';
 
     connect() {
         this.attachConditionListeners();
+        this.onTriggerModeChange();
+    }
+
+    onTriggerModeChange() {
+        if (!this.hasTriggerModeRadioTarget) {
+            return;
+        }
+
+        const selected = this.triggerModeRadioTargets.find((radio) => radio.checked);
+        const isAutomatic = this.hasAutomaticModeValue && selected?.value === this.automaticModeValue;
+
+        if (this.hasCodeWrapTarget) {
+            this.codeWrapTarget.hidden = isAutomatic;
+        }
+        if (this.hasCodeInputTarget) {
+            // Dropped, not just hidden: a hidden required field blocks submission.
+            this.codeInputTarget.required = !isAutomatic;
+        }
+        if (this.hasAutomaticHelpTarget) {
+            this.automaticHelpTarget.hidden = !isAutomatic;
+        }
     }
 
     typeSelectTargetConnected() {

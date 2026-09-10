@@ -29,11 +29,29 @@
 
         {{ safe_hook('coupon.list-caption') }}
 
+        <form method="get" action="{{ path('admin.coupon.default') }}" class="row g-2 mb-3" data-testid="coupons-filter-form">
+            {# Filtering must not silently reset the column the merchant sorted on. #}
+            <input type="hidden" name="order" value="{{ sort_field }}">
+            <input type="hidden" name="direction" value="{{ sort_direction }}">
+            <div class="col-md-4">
+                <label class="form-label" for="coupon-mode-filter">{{ 'Filter by trigger mode'|trans }}</label>
+                <select name="mode" id="coupon-mode-filter" class="form-select" data-testid="coupons-mode-filter">
+                    {% for choice in mode_filter_choices %}
+                        <option value="{{ choice.value }}" {% if choice.value == current_mode %}selected{% endif %}>{{ choice.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-secondary" type="submit">{{ 'Filter'|trans }}</button>
+            </div>
+        </form>
+
         {{ component('BoDataTable', {
             id: 'coupons',
             columns: [
                 column('id', 'ID'|trans, 'start', 'id', visibleFrom: 'md'),
                 column('code', 'Code'|trans, 'start', 'code'),
+                column_badge('mode', 'Mode'|trans, { code: 'secondary', automatic: 'info' }, labelKey: 'mode_label', visibleFrom: 'lg'),
                 column('title', 'Title'|trans, 'start', 'title'),
                 column('type', 'Type'|trans, visibleFrom: 'xl'),
                 column_badge('enabled_label', 'Status'|trans, { Enabled: 'success', Disabled: 'secondary' }, 'start', null, null, 'is_enabled'),
@@ -52,7 +70,7 @@
             rowHookArgs: { coupon_id: 'id' },
             sortField: sort_field,
             sortDirection: sort_direction,
-            sortKeepParams: { page: current_page > 1 ? current_page : null },
+            sortKeepParams: { page: current_page > 1 ? current_page : null, mode: current_mode != 'all' ? current_mode : null },
             rowIdentifierKey: 'code',
         }) }}
 
@@ -60,6 +78,7 @@
             route: 'admin.coupon.default',
             currentPage: current_page,
             lastPage: pages,
+            routeParams: { mode: current_mode != 'all' ? current_mode : null, order: sort_field, direction: sort_direction },
             ariaLabel: 'Coupons pagination',
             testid: 'coupons-pagination',
         }) }}
