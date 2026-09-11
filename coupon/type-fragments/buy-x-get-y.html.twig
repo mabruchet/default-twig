@@ -10,9 +10,11 @@
 {% set preview_labels = {
     empty: 'Fill in the fields above to see the rule in plain words.'|trans,
     pattern: 'For every %quantity% item(s) %scope%, %offered_quantity% %target% %discount%.'|trans,
+    pattern_cart: 'On a cart of at least %quantity% item(s) %scope%, %offered_quantity% %target% %discount%, once per cart.'|trans,
     scope_product: 'of the selected product'|trans,
     scope_category: 'from the selected categories'|trans,
     scope_selection: 'from the product selection'|trans,
+    scope_cart: 'whatever they are'|trans,
     target_same: 'item(s) of the same products'|trans,
     target_cheapest: 'of the cheapest item(s) of the lot'|trans,
     target_product: 'unit(s) of the offered product'|trans,
@@ -32,7 +34,8 @@
         {% for scope in [
             { value: 'product', label: 'One product'|trans },
             { value: 'category', label: 'One or more categories'|trans },
-            { value: 'selection', label: 'A selection of products'|trans }
+            { value: 'selection', label: 'A selection of products'|trans },
+            { value: 'cart', label: 'The whole cart'|trans }
         ] %}
             <div class="form-check form-check-inline">
                 <input id="buy-x-get-y-scope-{{ scope.value }}" type="radio" class="form-check-input"
@@ -90,7 +93,7 @@
                data-bo-coupon-buy-x-get-y-target="triggerQuantity"
                data-action="input->bo-coupon-buy-x-get-y#refreshPreview"
                data-testid="coupon-buy-x-get-y-trigger-quantity">
-        <small class="form-text text-muted">{{ 'The offer applies once per complete lot found in the cart.'|trans }}</small>
+        <small class="form-text text-muted">{{ 'The offer applies once per complete lot found in the cart. With the whole cart as the lot it applies once, and this quantity is the minimum number of items.'|trans }}</small>
     </div>
 
     <hr>

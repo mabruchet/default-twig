@@ -110,7 +110,6 @@ return [
     'The discount applies on its own as soon as the cart matches the conditions, with no code to type.' => 'The discount applies on its own as soon as the cart matches the conditions, with no code to type.',
     'The EORI number must start with a two letter country code followed by up to 15 alphanumeric characters.' => 'The EORI number must start with a two letter country code followed by up to 15 alphanumeric characters.',
     'The intra-community VAT number must start with a two letter country code followed by 2 to 13 alphanumeric characters.' => 'The intra-community VAT number must start with a two letter country code followed by 2 to 13 alphanumeric characters.',
-    'The offer applies once per complete lot found in the cart.' => 'The offer applies once per complete lot found in the cart.',
     'The offered line is added to the cart on its own, and cannot be changed by the buyer.' => 'The offered line is added to the cart on its own, and cannot be changed by the buyer.',
     'The SIRET number must contain 14 digits and its checksum must be valid.' => 'The SIRET number must contain 14 digits and its checksum must be valid.',
     'This export cannot be run: the module that provided it has been removed. Run "import-export:clean" to delete the exports and imports left behind.' => 'This export cannot be run: the module that provided it has been removed. Run "import-export:clean" to delete the exports and imports left behind.',
@@ -177,4 +176,8 @@ return [
     'What triggers the offer' => 'What triggers the offer',
     'With a code' => 'With a code',
     'Writable' => 'Writable',
+    'The whole cart' => 'The whole cart',
+    'whatever they are' => 'whatever they are',
+    'On a cart of at least %quantity% item(s) %scope%, %offered_quantity% %target% %discount%, once per cart.' => 'On a cart of at least %quantity% item(s) %scope%, %offered_quantity% %target% %discount%, once per cart.',
+    'The offer applies once per complete lot found in the cart. With the whole cart as the lot it applies once, and this quantity is the minimum number of items.' => 'The offer applies once per complete lot found in the cart. With the whole cart as the lot it applies once, and this quantity is the minimum number of items.',
 ];

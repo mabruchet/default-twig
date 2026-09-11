@@ -1793,4 +1793,8 @@ return [
     'Zip code' => 'Code postal',
     'ZIP code format' => 'Format du code postal',
     'Zone name' => 'Nom de la zone',
+    'The whole cart' => 'Tout le panier',
+    'whatever they are' => 'quels qu\'ils soient',
+    'On a cart of at least %quantity% item(s) %scope%, %offered_quantity% %target% %discount%, once per cart.' => 'Pour un panier de %quantity% article(s) au moins %scope%, %offered_quantity% %target% %discount%, une fois par panier.',
+    'The offer applies once per complete lot found in the cart. With the whole cart as the lot it applies once, and this quantity is the minimum number of items.' => 'L\'offre s\'applique une fois par lot complet trouvé dans le panier. Avec tout le panier comme lot, elle s\'applique une seule fois et cette quantité est le nombre minimum d\'articles.',
 ];

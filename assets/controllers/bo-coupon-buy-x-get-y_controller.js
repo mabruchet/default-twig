@@ -108,7 +108,11 @@ export default class extends Controller {
                 .replace('%currency%', this.currencyValue || '');
         }
 
-        this.previewTarget.textContent = (labels.pattern || '')
+        // The whole cart forms a single lot, so "for every N items" would be a lie:
+        // the quantity is a floor and the offer lands once.
+        const pattern = ('cart' === scope && labels.pattern_cart) ? labels.pattern_cart : labels.pattern;
+
+        this.previewTarget.textContent = (pattern || '')
             .replace('%quantity%', triggerQuantity)
             .replace('%scope%', scopeLabel)
             .replace('%offered_quantity%', offeredQuantity)
