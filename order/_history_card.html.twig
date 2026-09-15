@@ -1,0 +1,105 @@
+{#
+    The timeline of everything that happened to this order, newest first, and the
+    note the merchant is about to add to it.
+
+    Expects:
+      - order:            the Order model
+      - entries:          list of { id, event_type, icon, summary, actor, created_at,
+                                    is_note, visible_to_customer, comment, editable }
+      - total:            number of entries on the whole order
+      - page / last_page: pagination of the timeline
+      - can_add_note:     whether the admin may write a note
+      - note_max_length:  the server-side limit, mirrored on the textarea
+      - token:            CSRF token
+      - items_page:       current page of the order items list, kept in the history
+                           pagination links so paging through history does not reset it
+#}
+<div class="card mb-3" id="order-history" data-testid="order-history-card">
+    <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-1" aria-hidden="true"></i>{{ 'History'|trans }}</span>
+        <span class="badge text-bg-secondary" data-testid="order-history-total">{{ total }}</span>
+    </div>
+
+    {% if can_add_note %}
+        <div class="card-body border-bottom">
+            <form method="post" action="{{ path('admin.order.history.note.add', { order_id: order.id }) }}"
+                  data-testid="order-history-note-form">
+                <input type="hidden" name="_token" value="{{ token }}">
+                <label class="form-label" for="order-history-note-comment">{{ 'Add a note'|trans }}</label>
+                <textarea class="form-control mb-2" id="order-history-note-comment" name="comment" rows="3"
+                          maxlength="{{ note_max_length }}" required
+                          placeholder="{{ 'What should be remembered about this order?'|trans }}"
+                          data-testid="order-history-note-comment"></textarea>
+                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" value="1"
+                               id="order-history-note-visible" name="visible_to_customer"
+                               data-testid="order-history-note-visible">
+                        <label class="form-check-label" for="order-history-note-visible">{{ 'Visible to the customer'|trans }}</label>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary" data-testid="order-history-note-submit">
+                        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>{{ 'Add the note'|trans }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if entries is empty %}
+        <div class="card-body small text-muted" data-testid="order-history-empty">
+            {{ 'Nothing has been recorded on this order yet.'|trans }}
+        </div>
+    {% else %}
+        <ul class="list-group list-group-flush small" data-testid="order-history-timeline">
+            {% for entry in entries %}
+                <li class="list-group-item d-flex gap-3 align-items-start"
+                    data-testid="order-history-entry-{{ entry.id }}">
+                    <i class="bi {{ entry.icon }} fs-5 text-muted lh-1 mt-1" aria-hidden="true"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-baseline">
+                            <span class="fw-semibold" data-testid="order-history-summary-{{ entry.id }}">{{ entry.summary }}</span>
+                            {% if entry.created_at %}
+                                <span class="text-muted text-nowrap">
+                                    <i class="bi bi-calendar3 me-1" aria-hidden="true"></i>{{ entry.created_at|format_datetime('medium', 'short') }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted d-flex flex-wrap gap-2 align-items-center">
+                            <span data-testid="order-history-actor-{{ entry.id }}">{{ entry.actor }}</span>
+                            {% if entry.visible_to_customer %}
+                                <span class="badge text-bg-info" data-testid="order-history-visible-{{ entry.id }}">
+                                    <i class="bi bi-eye me-1" aria-hidden="true"></i>{{ 'Visible to the customer'|trans }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        {% if entry.comment %}
+                            <p class="mb-0 mt-1" data-testid="order-history-comment-{{ entry.id }}">{{ entry.comment|nl2br }}</p>
+                        {% endif %}
+                        {% if entry.editable %}
+                            <button type="button" class="btn btn-link btn-sm px-0 mt-1"
+                                    data-bs-toggle="modal" data-bs-target="#order-history-note-edit-{{ entry.id }}"
+                                    data-testid="order-history-edit-{{ entry.id }}">
+                                <i class="bi bi-pencil me-1" aria-hidden="true"></i>{{ 'Edit the note'|trans }}
+                            </button>
+                        {% endif %}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if last_page > 1 %}
+        <div class="card-footer">
+            {{ component('BoPagination', {
+                route: 'admin.order.update.view',
+                currentPage: page,
+                lastPage: last_page,
+                routeParams: { order_id: order.id, items_page: items_page|default(null) },
+                pageParam: 'history_page',
+                ariaLabel: 'Order history pagination'|trans,
+                testid: 'order-history',
+                spacing: '',
+            }) }}
+        </div>
+    {% endif %}
+</div>

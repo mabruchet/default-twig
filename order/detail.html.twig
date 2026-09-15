@@ -179,7 +179,7 @@
                                     route: 'admin.order.update.view',
                                     currentPage: items_page,
                                     lastPage: items_last_page,
-                                    routeParams: { order_id: order.id },
+                                    routeParams: { order_id: order.id, history_page: history_page },
                                     pageParam: 'items_page',
                                     ariaLabel: 'Order items pagination'|trans,
                                     testid: 'order-items',
@@ -195,7 +195,7 @@
                                 route: 'admin.order.update.view',
                                 currentPage: items_page,
                                 lastPage: items_last_page,
-                                routeParams: { order_id: order.id },
+                                routeParams: { order_id: order.id, history_page: history_page },
                                 pageParam: 'items_page',
                                 ariaLabel: 'Order items pagination'|trans,
                                 testid: 'order-items',
@@ -379,6 +379,20 @@
                 {% endif %}
 
                 </div>{# /tab-content #}
+
+                {% if history_enabled %}
+                    {% include '@BackOfficeDefaultTwig/order/_history_card.html.twig' with {
+                        order: order,
+                        entries: history_entries,
+                        total: history_total,
+                        page: history_page,
+                        last_page: history_last_page,
+                        can_add_note: history_can_add_note,
+                        note_max_length: history_note_max_length,
+                        token: token,
+                        items_page: items_page,
+                    } only %}
+                {% endif %}
             </div>
 
             <div class="col-lg-4">
@@ -529,6 +543,17 @@
             </div>
         </div>
     </div>
+
+    {% if history_enabled %}
+        {% for entry in history_entries|filter(entry => entry.editable) %}
+            {% include '@BackOfficeDefaultTwig/order/_history_note_edit_modal.html.twig' with {
+                order: order,
+                entry: entry,
+                note_max_length: history_note_max_length,
+                token: token,
+            } only %}
+        {% endfor %}
+    {% endif %}
 
     {% if returns_enabled and can_create_return and returnable_lines is not empty %}
         {% include '@BackOfficeDefaultTwig/order/_return_open_modal.html.twig' with {
