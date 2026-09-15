@@ -24,6 +24,7 @@ use BackOfficeDefaultTwigBundle\Service\Order\OrderBulkStatusPlanner;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderDetailContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderHistoryContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderListRowPresenter;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderRoundingRule;
 use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnContextBuilder;
@@ -88,6 +89,7 @@ final class OrderController
         private readonly OrderStatusChangeContextBuilder $statusChangeContext,
         private readonly AdminLogger $adminLogger,
         private readonly RequestStack $requestStack,
+        private readonly OrderHistoryContextBuilder $historyContextBuilder,
     ) {
     }
 
@@ -134,10 +136,12 @@ final class OrderController
         $itemsPage = max(1, (int) $request->query->get('items_page', 1));
         $itemsPerPage = 25;
         $itemsLastPage = max(1, (int) ceil($itemsTotal / $itemsPerPage));
+        $historyPage = max(1, (int) $request->query->get('history_page', 1));
 
         return new Response($this->twig->render(self::DETAIL_TEMPLATE, array_merge(
             $this->detailContextBuilder->build($order, $locale),
             $this->returnContextBuilder->build($order, $locale),
+            $this->historyContextBuilder->build($order, $historyPage, $locale),
             [
                 'order' => $order,
                 'order_items' => $this->orderItemsPage($order_id, $itemsPage, $itemsPerPage),

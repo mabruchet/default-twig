@@ -1,0 +1,48 @@
+{#
+    The correction of one note of the order history.
+
+    One modal per editable note rather than a single one filled from data attributes:
+    a page carries at most one page of notes, a modal per note needs no JavaScript at
+    all, and the server already rendered the values it has to show.
+
+    Expects: order, entry, note_max_length, token
+#}
+<div class="modal fade" id="order-history-note-edit-{{ entry.id }}" tabindex="-1"
+     aria-labelledby="order-history-note-edit-title-{{ entry.id }}" aria-hidden="true"
+     data-testid="order-history-note-edit-modal-{{ entry.id }}">
+    <div class="modal-dialog">
+        <form method="post" action="{{ path('admin.order.history.note.edit', { order_id: order.id, history_id: entry.id }) }}"
+              data-testid="order-history-note-edit-form-{{ entry.id }}">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="order-history-note-edit-title-{{ entry.id }}">{{ 'Edit the note'|trans }}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="_token" value="{{ token }}">
+
+                    <div class="mb-3">
+                        <label class="form-label" for="order-history-note-edit-comment-{{ entry.id }}">{{ 'Note'|trans }}</label>
+                        <textarea class="form-control" id="order-history-note-edit-comment-{{ entry.id }}"
+                                  name="comment" rows="4" maxlength="{{ note_max_length }}" required
+                                  data-testid="order-history-note-edit-comment-{{ entry.id }}">{{ entry.comment }}</textarea>
+                    </div>
+
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" value="1"
+                               id="order-history-note-edit-visible-{{ entry.id }}" name="visible_to_customer"
+                               {% if entry.visible_to_customer %}checked{% endif %}
+                               data-testid="order-history-note-edit-visible-{{ entry.id }}">
+                        <label class="form-check-label" for="order-history-note-edit-visible-{{ entry.id }}">{{ 'Visible to the customer'|trans }}</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'Close'|trans }}</button>
+                    <button type="submit" class="btn btn-primary" data-testid="order-history-note-edit-submit-{{ entry.id }}">
+                        <i class="bi bi-check-lg me-1" aria-hidden="true"></i>{{ 'Save'|trans }}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
