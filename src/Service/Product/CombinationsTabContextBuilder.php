@@ -53,12 +53,14 @@ final readonly class CombinationsTabContextBuilder
             ->orderById()
             ->find();
 
-        $rows = [];
-        $defaultPse = null;
+        $attributePositions = $this->templateAttributePositions($product);
+
+        $entries = [];
         $hasCombinations = false;
         foreach ($pseRecords as $pse) {
             \assert($pse instanceof ProductSaleElements);
             $combinationLabels = [];
+            $attributeOrder = [];
             foreach ($pse->getAttributeCombinations() as $combination) {
                 $attribute = $combination->getAttribute();
                 $attributeAv = $combination->getAttributeAv();
@@ -68,7 +70,12 @@ final readonly class CombinationsTabContextBuilder
                 $attribute->setLocale($locale);
                 $attributeAv->setLocale($locale);
                 $combinationLabels[] = (string) $attribute->getTitle().': '.(string) $attributeAv->getTitle();
+                $attributeOrder[] = [
+                    $attributePositions[(int) $attribute->getId()] ?? (int) $attribute->getPosition(),
+                    (int) $attributeAv->getPosition(),
+                ];
             }
+            sort($attributeOrder);
             if ($combinationLabels !== []) {
                 $hasCombinations = true;
             }
@@ -89,10 +96,20 @@ final readonly class CombinationsTabContextBuilder
                 'visible' => (bool) $pse->getVisible(),
                 'position' => (int) $pse->getPosition(),
             ];
-            $rows[] = $row;
+            $entries[] = ['row' => $row, 'attribute_order' => $attributeOrder];
+        }
 
-            if ($defaultPse === null && (bool) $pse->getIsDefault()) {
+        // The query already ordered by position then id. Combinations tied on their
+        // position (every one of them on a shop migrated from Thelia 2) are then read
+        // in the order of their attributes and attribute values.
+        usort($entries, $this->compareEntries(...));
+
+        $rows = array_column($entries, 'row');
+        $defaultPse = null;
+        foreach ($rows as $row) {
+            if ($row['isdefault']) {
                 $defaultPse = $row;
+                break;
             }
         }
 
@@ -117,6 +134,36 @@ final readonly class CombinationsTabContextBuilder
             'available_currencies' => $this->collectCurrencies(),
             'template_attributes' => $this->collectTemplateAttributes($product, $locale),
         ];
+    }
+
+    /**
+     * @param array{row: array<string, mixed>, attribute_order: list<array{int, int}>} $left
+     * @param array{row: array<string, mixed>, attribute_order: list<array{int, int}>} $right
+     */
+    private function compareEntries(array $left, array $right): int
+    {
+        return [$left['row']['position'], $left['attribute_order'], $left['row']['id']]
+            <=> [$right['row']['position'], $right['attribute_order'], $right['row']['id']];
+    }
+
+    /**
+     * Position of each attribute of the product's template, by attribute id.
+     *
+     * @return array<int, int>
+     */
+    private function templateAttributePositions(Product $product): array
+    {
+        $templateId = (int) ($product->getTemplateId() ?? 0);
+        if ($templateId <= 0) {
+            return [];
+        }
+
+        $positions = [];
+        foreach (AttributeTemplateQuery::create()->filterByTemplateId($templateId)->find() as $entry) {
+            $positions[(int) $entry->getAttributeId()] = (int) $entry->getPosition();
+        }
+
+        return $positions;
     }
 
     /**
