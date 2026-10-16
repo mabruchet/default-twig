@@ -2682,4 +2682,12 @@ return [
     'This customer has not asked for any return yet.' => 'Ce client n\'a demandé aucun retour.',
     'Only the %count% most recent returns are shown.' => 'Seuls les %count% retours les plus récents sont affichés.',
     'See the %count% returns of this customer' => 'Voir les %count% retours de ce client',
+    'Payment confirmed after the card was given back: refund it through the provider' => 'Paiement confirmé après la restitution de la carte : à rembourser chez le prestataire',
+    'Payment confirmed after the card was given back: refund it through the provider (payment part %part%)' => 'Paiement confirmé après la restitution de la carte : à rembourser chez le prestataire (part de paiement %part%)',
+    'Payment parts' => 'Parts de paiement',
+    'Primary' => 'Principal',
+    'Pending' => 'En attente',
+    'Settled' => 'Réglée',
+    'Failed' => 'Échouée',
+    'Released' => 'Libérée',
 ];

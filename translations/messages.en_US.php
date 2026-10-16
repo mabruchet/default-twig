@@ -571,4 +571,12 @@ return [
     'File' => 'File',
     'Import' => 'Import',
     'Delete this failed job? It can no longer be replayed.' => 'Delete this failed job? It can no longer be replayed.',
+    'Payment confirmed after the card was given back: refund it through the provider' => 'Payment confirmed after the card was given back: refund it through the provider',
+    'Payment confirmed after the card was given back: refund it through the provider (payment part %part%)' => 'Payment confirmed after the card was given back: refund it through the provider (payment part %part%)',
+    'Payment parts' => 'Payment parts',
+    'Primary' => 'Primary',
+    'Pending' => 'Pending',
+    'Settled' => 'Settled',
+    'Failed' => 'Failed',
+    'Released' => 'Released',
 ];

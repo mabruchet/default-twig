@@ -48,6 +48,7 @@ final readonly class OrderHistoryEntryPresenter
         'shipment_opened' => 'bi-box-seam',
         'shipment_shipped' => 'bi-truck',
         'shipment_cancelled' => 'bi-x-octagon',
+        'payment_confirmed_after_release' => 'bi-cash-coin',
     ];
 
     private const FALLBACK_ICON = 'bi-record-circle';
@@ -189,6 +190,7 @@ final readonly class OrderHistoryEntryPresenter
                 'Shipment cancelled',
                 $locale,
             ),
+            OrderHistoryEventType::PAYMENT_CONFIRMED_AFTER_RELEASE => $this->summarizePaymentConfirmedAfterRelease($payload, $locale),
             // A type this theme cannot name — a module's own code, or an enum case
             // added by a core more recent than this theme: its raw code is the only
             // thing that can be said about it without inventing a meaning, and a
@@ -289,6 +291,22 @@ final readonly class OrderHistoryEntryPresenter
         return '' === $trackingNumber
             ? $this->trans('Shipment %reference% shipped', ['%reference%' => $reference], $locale)
             : $this->trans('Shipment %reference% shipped, tracking number %tracking%', ['%reference%' => $reference, '%tracking%' => $trackingNumber], $locale);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function summarizePaymentConfirmedAfterRelease(array $payload, string $locale): string
+    {
+        $partId = $this->readString($payload, 'payment_part_id');
+
+        return '' === $partId
+            ? $this->trans('Payment confirmed after the card was given back: refund it through the provider', [], $locale)
+            : $this->trans(
+                'Payment confirmed after the card was given back: refund it through the provider (payment part %part%)',
+                ['%part%' => $partId],
+                $locale,
+            );
     }
 
     private function summarizeReference(

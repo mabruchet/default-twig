@@ -576,6 +576,38 @@
                         {% if payment.invoice_date %}
                             <p class="mb-1 text-muted">{{ 'Invoice date'|trans }}: {{ payment.invoice_date|format_date('medium') }}</p>
                         {% endif %}
+                        {% if payment.parts %}
+                            {% set part_states = {
+                                'pending': 'Pending'|trans,
+                                'settled': 'Settled'|trans,
+                                'failed': 'Failed'|trans,
+                                'released': 'Released'|trans,
+                            } %}
+                            <table class="table table-sm mt-2 mb-2" data-testid="order-payment-parts">
+                                <caption class="small text-muted">{{ 'Payment parts'|trans }}</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{{ 'Payment method'|trans }}</th>
+                                        <th scope="col" class="text-end">{{ 'Amount'|trans }}</th>
+                                        <th scope="col">{{ 'Status'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for part in payment.parts %}
+                                        <tr data-testid="order-payment-part">
+                                            <td>
+                                                {{ part.label|default('-') }}
+                                                {% if part.is_primary %}
+                                                    <span class="badge text-bg-secondary">{{ 'Primary'|trans }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end" dir="ltr">{{ part.amount|number_format(2, '.', ' ') }} {{ currency.symbol }}</td>
+                                            <td>{{ part_states[part.state]|default(part.state) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% endif %}
                         {{ safe_hook('order-edit.payment-module-bottom', { order_id: order.id, module_id: payment.module_id }) }}
                     </div>
                 </div>

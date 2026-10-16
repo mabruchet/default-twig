@@ -180,6 +180,33 @@ final class OrderHistoryBackOfficeTest extends WebIntegrationTestCase
         self::assertStringContainsString('bi-box-arrow-in-down', $html);
     }
 
+    /**
+     * A provider that confirms a payment after the card was given back leaves a line
+     * the merchant must act on: it reads as a sentence naming the part, never as the code.
+     */
+    public function testAPaymentConfirmedAfterTheReleaseReadsAsARefundToDo(): void
+    {
+        $this->loginFullAdmin();
+        $order = $this->factory->order(null, ['statusCode' => OrderStatus::CODE_CANCELED]);
+
+        $entry = $this->entry($order, OrderHistoryEventType::PAYMENT_CONFIRMED_AFTER_RELEASE->value, [
+            'actorType' => OrderHistoryActorType::MODULE->value,
+            'actorLabel' => 'MyProvider',
+            'payload' => ['payment_part_id' => 42],
+        ]);
+
+        $this->assertPageRenders($this->sheetUrl($order));
+        $html = $this->html();
+
+        self::assertStringContainsString('order-history-entry-'.$entry->getId(), $html);
+        self::assertStringContainsString(
+            'Payment confirmed after the card was given back: refund it through the provider (payment part 42)',
+            $html,
+        );
+        self::assertStringNotContainsString('payment_confirmed_after_release', $html, 'The raw code must not reach the merchant.');
+        self::assertStringContainsString('bi-cash-coin', $html);
+    }
+
     public function testTheSheetOfAnOrderWithoutHistoryRendersWithoutATimeline(): void
     {
         $this->loginFullAdmin();

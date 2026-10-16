@@ -21,6 +21,7 @@ use Thelia\Model\Order;
 use Thelia\Model\OrderConsent;
 use Thelia\Model\OrderProduct;
 use Thelia\Model\OrderCoupon;
+use Thelia\Model\OrderPaymentPartQuery;
 use Thelia\Model\OrderStatusQuery;
 
 final readonly class OrderDetailContextBuilder
@@ -184,6 +185,7 @@ final readonly class OrderDetailContextBuilder
                 'invoice_ref' => (string) $order->getInvoiceRef(),
                 'invoice_date' => $invoiceDateString,
                 'is_paid' => $order->isPaid(false),
+                'parts' => $this->paymentParts($order, $locale),
             ],
             'delivery' => [
                 'module_id' => (int) $order->getDeliveryModuleId(),
@@ -239,6 +241,58 @@ final readonly class OrderDetailContextBuilder
         $module->setLocale($locale);
 
         return (string) $module->getTitle();
+    }
+
+    /**
+     * The payment parts of a split order, in settlement order. An order paid with one
+     * method has none. The module titles come from one query for all the parts; a part
+     * whose module was deleted keeps the title frozen on the part, then falls back to the
+     * module code.
+     *
+     * @return list<array{label: string, amount: float, state: string, is_primary: bool}>
+     */
+    private function paymentParts(Order $order, string $locale): array
+    {
+        // The table belongs to a core that ships split payments: an older core has none.
+        if (!class_exists(OrderPaymentPartQuery::class)) {
+            return [];
+        }
+
+        $parts = OrderPaymentPartQuery::create()
+            ->filterByOrderId($order->getId())
+            ->orderByPosition()
+            ->orderById()
+            ->find();
+        if (\count($parts) === 0) {
+            return [];
+        }
+
+        $moduleIds = [];
+        foreach ($parts as $part) {
+            if ($part->getPaymentModuleId() !== null) {
+                $moduleIds[] = (int) $part->getPaymentModuleId();
+            }
+        }
+        $modules = [];
+        if ($moduleIds !== []) {
+            foreach (ModuleQuery::create()->joinWithI18n($locale)->filterById($moduleIds)->find() as $module) {
+                $modules[(int) $module->getId()] = $module;
+            }
+        }
+
+        $lines = [];
+        foreach ($parts as $part) {
+            $module = $modules[(int) $part->getPaymentModuleId()] ?? null;
+            $module?->setLocale($locale);
+            $lines[] = [
+                'label' => (string) ($module?->getTitle() ?: $part->getPaymentModuleTitle() ?: $module?->getCode()),
+                'amount' => (float) $part->getAmount(),
+                'state' => (string) $part->getState(),
+                'is_primary' => (bool) $part->getIsPrimary(),
+            ];
+        }
+
+        return $lines;
     }
 
     private function moduleDescription(int $moduleId, string $locale): string
