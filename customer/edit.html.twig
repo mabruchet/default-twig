@@ -310,6 +310,53 @@
             {% endblock %}
         {% endembed %}
 
+        {# ── Stored payment methods, read only, left out for an administrator who may not see them ── #}
+        {% if can_view_payment_methods|default(false) %}
+            {% embed '@BackOfficeDefaultTwig/customer/_section.html.twig' with {
+                id: 'payment-methods', title: 'Payment methods'|trans, icon: 'bi-credit-card', testid: 'customer-payment-methods-section',
+                count: payment_methods|length, payment_methods: payment_methods,
+            } only %}
+                {% block section_body %}
+                    {% if payment_methods %}
+                        <table class="table table-sm mb-0" data-testid="customer-payment-methods">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{ 'Label'|trans }}</th>
+                                    <th scope="col">{{ 'Payment module'|trans }}</th>
+                                    <th scope="col">{{ 'Expiration date'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for method in payment_methods %}
+                                    <tr data-testid="customer-payment-method">
+                                        <td>
+                                            {{ method.label }}
+                                            {% if method.is_default %}
+                                                <span class="badge text-bg-secondary" data-testid="customer-payment-method-default">{{ 'Default'|trans }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ method.module|default('-') }}</td>
+                                        <td dir="ltr">
+                                            {% if method.expires_at %}
+                                                {{ method.expires_at|format_date('medium') }}
+                                                {% if method.is_expired %}
+                                                    <span class="badge bg-warning-subtle text-warning-emphasis">{{ 'Expired'|trans }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted mb-0" data-testid="customer-payment-methods-empty">{{ 'This customer has no saved payment method.'|trans }}</p>
+                    {% endif %}
+                {% endblock %}
+            {% endembed %}
+        {% endif %}
+
         {# ── Recent orders, left out for an administrator who may not see them ── #}
         {% if overview.canViewOrders %}
         {% set orders_rows = [] %}

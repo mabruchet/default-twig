@@ -29,6 +29,7 @@ use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilters;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerListRowPresenter;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerOverviewProvider;
+use BackOfficeDefaultTwigBundle\Service\Customer\CustomerPaymentMethodsProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\StateChoiceProvider;
 use BackOfficeDefaultTwigBundle\Service\Tag\TagSwatch;
@@ -101,6 +102,7 @@ final class CustomerController
         private readonly CustomerOverviewProvider $overviewProvider,
         private readonly ReturnEligibilityChecker $returnEligibility,
         private readonly OrderReturnRepository $orderReturnRepository,
+        private readonly CustomerPaymentMethodsProvider $paymentMethods,
     ) {
     }
 
@@ -233,6 +235,7 @@ final class CustomerController
         $customerId = (int) $customer->getId();
         $navigation = $this->customerRepository->findPreviousNext($customer);
         $overview = $this->overviewProvider->compute($customer, new \DateTimeImmutable());
+        $canViewPaymentMethods = $this->paymentMethods->canView();
 
         // The orders are not even read for an administrator who may not see them.
         $ordersTotal = $overview->canViewOrders ? $this->orderRepository->countByCustomer($customerId) : 0;
@@ -253,6 +256,8 @@ final class CustomerController
             'addresses' => $this->addressRows($customer),
             'address_create_form' => $addressCreateForm->createView(),
             'overview' => $overview,
+            'can_view_payment_methods' => $canViewPaymentMethods,
+            'payment_methods' => $canViewPaymentMethods ? $this->paymentMethods->forCustomer($customerId, $request->getLocale(), new \DateTimeImmutable('today')) : [],
             'recent_orders' => $overview->canViewOrders ? $this->customerOrdersPage($customerId, $ordersPage, $ordersPerPage) : [],
             'orders_total' => $ordersTotal,
             'orders_page' => $ordersPage,

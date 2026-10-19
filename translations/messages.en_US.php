@@ -579,4 +579,7 @@ return [
     'Settled' => 'Settled',
     'Failed' => 'Failed',
     'Released' => 'Released',
+    'Payment methods' => 'Payment methods',
+    'Payment module' => 'Payment module',
+    'This customer has no saved payment method.' => 'This customer has no saved payment method.',
 ];

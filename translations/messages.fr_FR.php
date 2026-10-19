@@ -2690,4 +2690,7 @@ return [
     'Settled' => 'Réglée',
     'Failed' => 'Échouée',
     'Released' => 'Libérée',
+    'Payment methods' => 'Moyens de paiement',
+    'Payment module' => 'Module de paiement',
+    'This customer has no saved payment method.' => 'Ce client n\'a enregistré aucun moyen de paiement.',
 ];

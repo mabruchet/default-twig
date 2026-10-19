@@ -56,6 +56,8 @@ final class CustomerSheetTest extends WebIntegrationTestCase
      * is read again on every request (22 warm), as the memo of the sidebar is reset
      * between two requests: it holds the figures of the administrator of the request.
      * With returns on, the number of returns of the customer is one query more (23 warm).
+     * The stored payment methods of the customer cost one more query, whatever the number
+     * of stored methods (one LEFT JOIN query; 42 and 23).
      */
     private const COLD_QUERY_BUDGET = 42;
     private const WARM_QUERY_BUDGET = 23;
