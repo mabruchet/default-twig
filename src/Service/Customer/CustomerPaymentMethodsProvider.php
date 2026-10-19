@@ -36,7 +36,9 @@ final readonly class CustomerPaymentMethodsProvider
     public function canView(): bool
     {
         // The table belongs to a core that ships stored payment methods: an older core has none.
+        // TODO remove the ignore once thelia/core 3.3 is required: the constant does not exist in the core the CI installs.
         return class_exists(CustomerPaymentMethodQuery::class)
+            // @phpstan-ignore classConstant.notFound
             && $this->access->canView(AdminResources::CUSTOMER_PAYMENT_METHOD);
     }
 
@@ -50,6 +52,8 @@ final readonly class CustomerPaymentMethodsProvider
         }
 
         // Only the columns the sheet shows are selected: the token is never loaded.
+        // TODO remove once thelia/core 3.3 is required: the class does not exist in the core the CI installs.
+        // @phpstan-ignore class.notFound
         $methods = CustomerPaymentMethodQuery::create()
             ->filterByCustomerId($customerId)
             ->usePaymentModuleQuery(null, Criteria::LEFT_JOIN)

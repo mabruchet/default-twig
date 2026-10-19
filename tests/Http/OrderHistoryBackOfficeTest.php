@@ -186,6 +186,11 @@ final class OrderHistoryBackOfficeTest extends WebIntegrationTestCase
      */
     public function testAPaymentConfirmedAfterTheReleaseReadsAsARefundToDo(): void
     {
+        // TODO remove once thelia/core 3.3 is required.
+        if (!\defined(OrderHistoryEventType::class.'::PAYMENT_CONFIRMED_AFTER_RELEASE')) {
+            self::markTestSkipped('Needs the stored payment methods of Thelia 3.3.');
+        }
+
         $this->loginFullAdmin();
         $order = $this->factory->order(null, ['statusCode' => OrderStatus::CODE_CANCELED]);
 

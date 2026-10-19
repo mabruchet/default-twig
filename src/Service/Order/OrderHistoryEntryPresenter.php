@@ -131,6 +131,13 @@ final readonly class OrderHistoryEntryPresenter
     ): string {
         $payload = $entry->getDecodedPayload();
 
+        // Matched on its code, not on the enum case: an older core has no such case, and
+        // naming it in the match below would throw once the earlier arms miss.
+        // TODO move back into the match once thelia/core 3.3 is required.
+        if ('payment_confirmed_after_release' === $eventType) {
+            return $this->summarizePaymentConfirmedAfterRelease($payload, $locale);
+        }
+
         return match (OrderHistoryEventType::tryFrom($eventType)) {
             OrderHistoryEventType::ORDER_CREATED => $this->summarizeOrderCreated($payload, $locale),
             OrderHistoryEventType::STATUS_CHANGED => $this->summarizeStatusChanged($payload, $statusTitles, $locale),
@@ -190,7 +197,6 @@ final readonly class OrderHistoryEntryPresenter
                 'Shipment cancelled',
                 $locale,
             ),
-            OrderHistoryEventType::PAYMENT_CONFIRMED_AFTER_RELEASE => $this->summarizePaymentConfirmedAfterRelease($payload, $locale),
             // A type this theme cannot name — a module's own code, or an enum case
             // added by a core more recent than this theme: its raw code is the only
             // thing that can be said about it without inventing a meaning, and a

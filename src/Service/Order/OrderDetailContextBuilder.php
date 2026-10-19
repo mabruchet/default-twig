@@ -258,6 +258,8 @@ final readonly class OrderDetailContextBuilder
             return [];
         }
 
+        // TODO remove once thelia/core 3.3 is required: the class does not exist in the core the CI installs.
+        // @phpstan-ignore class.notFound
         $parts = OrderPaymentPartQuery::create()
             ->filterByOrderId($order->getId())
             ->orderByPosition()

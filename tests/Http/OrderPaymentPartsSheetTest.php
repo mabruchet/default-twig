@@ -42,6 +42,11 @@ final class OrderPaymentPartsSheetTest extends WebIntegrationTestCase
     {
         parent::setUp();
 
+        // TODO remove once thelia/core 3.3 is required.
+        if (!class_exists(OrderPaymentPart::class)) {
+            self::markTestSkipped('Needs the stored payment methods of Thelia 3.3.');
+        }
+
         if (ConfigQuery::read('active-admin-template') !== 'default-twig') {
             self::markTestSkipped(
                 'The Twig back-office is not the active admin template of the test shop: its routes are not registered.',
