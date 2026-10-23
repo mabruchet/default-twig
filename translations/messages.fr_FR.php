@@ -2688,7 +2688,6 @@ return [
     'Primary' => 'Principal',
     'Pending' => 'En attente',
     'Settled' => 'Réglée',
-    'Failed' => 'Échouée',
     'Released' => 'Libérée',
     'Payment methods' => 'Moyens de paiement',
     'Payment module' => 'Module de paiement',

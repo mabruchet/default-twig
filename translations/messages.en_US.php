@@ -577,7 +577,6 @@ return [
     'Primary' => 'Primary',
     'Pending' => 'Pending',
     'Settled' => 'Settled',
-    'Failed' => 'Failed',
     'Released' => 'Released',
     'Payment methods' => 'Payment methods',
     'Payment module' => 'Payment module',
