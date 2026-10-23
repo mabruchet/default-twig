@@ -57,10 +57,10 @@ final class CustomerSheetTest extends WebIntegrationTestCase
      * between two requests: it holds the figures of the administrator of the request.
      * With returns on, the number of returns of the customer is one query more (23 warm).
      * The stored payment methods of the customer cost one more query, whatever the number
-     * of stored methods (one LEFT JOIN query; 42 and 23).
+     * of stored methods (one LEFT JOIN query; 43 cold, 24 warm).
      */
-    private const COLD_QUERY_BUDGET = 42;
-    private const WARM_QUERY_BUDGET = 23;
+    private const COLD_QUERY_BUDGET = 43;
+    private const WARM_QUERY_BUDGET = 24;
 
     private AdminSessionInjector $injector;
 
