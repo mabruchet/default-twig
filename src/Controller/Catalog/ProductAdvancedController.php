@@ -19,6 +19,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\File\ProductVideoPresenter;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationIdentifierNotices;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationsTabContextBuilder;
+use BackOfficeDefaultTwigBundle\Service\Product\GroupPricesContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Product\SaleUnitValuesContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\SaleUnit\RestrictedAdminGuard;
 use Propel\Runtime\ActiveQuery\Criteria;
@@ -106,6 +107,7 @@ final class ProductAdvancedController
         private readonly CombinationIdentifierNotices $identifierNotices,
         private readonly TranslatorInterface $translator,
         private readonly SaleUnitValuesContextBuilder $saleUnitValuesContextBuilder,
+        private readonly GroupPricesContextBuilder $groupPricesContextBuilder,
         private readonly RequestStack $requestStack,
         private readonly RestrictedAdminGuard $restricted,
     ) {
@@ -710,6 +712,13 @@ final class ProductAdvancedController
                 $request->getLocale(),
             )
             : null;
+        $context['group_prices'] = $this->access->canView(AdminResources::CUSTOMER_GROUP)
+            ? $this->groupPricesContextBuilder->build($context['pse_rows'], $context['currency']['id'], $request->getLocale())
+            : null;
+        // The grid prices every sale unit at once: it is read-only for a restricted administrator.
+        $context['group_prices_can_edit'] = !$this->restricted->isRestricted()
+            && $this->access->can(AdminResources::CUSTOMER_GROUP, AccessManager::UPDATE)
+            && $this->access->can(self::RESOURCE, AccessManager::UPDATE);
 
         return new Response($this->twig->render(
             '@BackOfficeDefaultTwig/catalog/product/_combinations_tab.html.twig',

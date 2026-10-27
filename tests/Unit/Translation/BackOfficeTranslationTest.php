@@ -14,11 +14,12 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Tests\Unit\Translation;
 
+use BackOfficeDefaultTwigBundle\Controller\Configuration\CustomerGroupController;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFailureMessage;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Thelia\Domain\DataTransfer\Export\ExportPeriod;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Finder\Finder;
+use Thelia\Domain\DataTransfer\Export\ExportPeriod;
 
 /**
  * Every text the back office translates is in its catalogues: one missing reads in
@@ -37,25 +38,25 @@ final class BackOfficeTranslationTest extends TestCase
 
     /** The texts each catalogue lacks, as measured when it was last changed. */
     private const KNOWN_GAPS = [
-        'ar_SA' => 1115,
-        'cs_CZ' => 995,
-        'de_DE' => 982,
-        'el_GR' => 1115,
-        'es_ES' => 924,
-        'fa_IR' => 1115,
-        'he_IL' => 1115,
-        'hu_HU' => 1115,
-        'id_ID' => 1115,
-        'it_IT' => 924,
-        'nl_NL' => 995,
-        'pl_PL' => 1115,
-        'pt_BR' => 1115,
-        'pt_PT' => 1115,
-        'ru_RU' => 995,
-        'sk_SK' => 1115,
-        'tr_TR' => 1115,
-        'uk_UA' => 1115,
-        'zh_CN' => 1115,
+        'ar_SA' => 1174,
+        'cs_CZ' => 1054,
+        'de_DE' => 1041,
+        'el_GR' => 1174,
+        'es_ES' => 983,
+        'fa_IR' => 1174,
+        'he_IL' => 1174,
+        'hu_HU' => 1174,
+        'id_ID' => 1174,
+        'it_IT' => 983,
+        'nl_NL' => 1054,
+        'pl_PL' => 1174,
+        'pt_BR' => 1174,
+        'pt_PT' => 1174,
+        'ru_RU' => 1054,
+        'sk_SK' => 1174,
+        'tr_TR' => 1174,
+        'uk_UA' => 1174,
+        'zh_CN' => 1174,
     ];
 
     #[DataProvider('catalogues')]
@@ -91,6 +92,23 @@ final class BackOfficeTranslationTest extends TestCase
     public function testTheTextsNamedByConstantsAreTranslated(string $locale): void
     {
         self::assertSame([], self::missingFrom($locale, [AdminFailureMessage::SERVER_ERROR, ExportPeriod::INVALID_DATES]));
+    }
+
+    /**
+     * The customer groups screen: the texts its controller names by constant, and the ones
+     * its template hands to the dialogs as plain strings, which the dialogs translate.
+     * French is complete; the other catalogues are counted by KNOWN_GAPS, as for every text.
+     */
+    public function testTheTextsOfTheCustomerGroupScreenNamedApartAreInFrench(): void
+    {
+        self::assertSame([], self::missingFrom('fr_FR', [
+            CustomerGroupController::REORDER_LABEL,
+            CustomerGroupController::DELETION_LABEL,
+            CustomerGroupController::GENERIC_FAILURE,
+            'Create a new customer group',
+            'Delete customer group',
+            'Do you really want to delete this customer group? Its customers move to the default group. The default group cannot be deleted.',
+        ]));
     }
 
     /**

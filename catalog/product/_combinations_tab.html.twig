@@ -353,6 +353,10 @@
         {{ include('@BackOfficeDefaultTwig/catalog/product/_sale_unit_values.html.twig') }}
     {% endif %}
 
+    {% if group_prices|default(null) is not null %}
+        {{ include('@BackOfficeDefaultTwig/catalog/product/_group_prices.html.twig') }}
+    {% endif %}
+
     {% component 'BoConfirmDialog' with {
         id: 'pse-delete-modal',
         title: 'Delete combination',

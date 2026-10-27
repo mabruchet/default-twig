@@ -1,0 +1,169 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Edit customer group'|trans }} - {{ customer_group.title|default(customer_group.code) }}{% endblock %}
+{% block body_testid %}configuration-customer-group-edit{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.customer-groups.default') }}">{{ 'Customer groups'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ customer_group.title|default(customer_group.code) }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {% form_theme form with bo_form_themes only %}
+
+    {{ safe_hook('customer-group-edit.top', { customer_group_id: customer_group.id }) }}
+
+    <div class="container-fluid" data-testid="customer-group-edit-page">
+        <h1 class="h3 mb-2">{{ 'Customer group'|trans }} <small class="text-muted"><code>{{ customer_group.code }}</code> - #{{ customer_group.id }}</small></h1>
+        <p class="text-muted small mb-3" data-testid="customer-group-customers">
+            {{ '%count% customer(s) belong to this group.'|trans({ '%count%': customer_group_customers }) }}
+        </p>
+
+        <div class="mb-3">
+            {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}
+        </div>
+
+        {% if categories_list_emptied %}
+            <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert" data-testid="customer-group-categories-emptied">
+                <span>{{ 'This group is restricted, but none of the categories on its list exists any more: it sees no category. Tick categories and save to restrict it to them, or lift the restriction to open the whole catalogue.'|trans }}</span>
+                {% if not sale_unit_restricted() %}
+                    <form method="post" action="{{ path('admin.configuration.customer-groups.lift-restriction') }}" class="m-0">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <input type="hidden" name="customer_group_id" value="{{ customer_group.id }}">
+                        <input type="hidden" name="list" value="categories">
+                        <button type="submit" class="btn btn-sm btn-warning text-nowrap" data-testid="customer-group-categories-lift">{{ 'Lift the restriction'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if payment_modules_list_emptied %}
+            <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert" data-testid="customer-group-payment-modules-emptied">
+                <span>{{ 'This group is restricted, but none of the payment modules on its list exists any more: it cannot pay with any payment module. Tick payment modules and save to restrict it to them, or lift the restriction to open every payment module.'|trans }}</span>
+                {% if not sale_unit_restricted() %}
+                    <form method="post" action="{{ path('admin.configuration.customer-groups.lift-restriction') }}" class="m-0">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <input type="hidden" name="customer_group_id" value="{{ customer_group.id }}">
+                        <input type="hidden" name="list" value="payment_modules">
+                        <button type="submit" class="btn btn-sm btn-warning text-nowrap" data-testid="customer-group-payment-modules-lift">{{ 'Lift the restriction'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-body">
+                {{ form_start(form, { action: path('admin.configuration.customer-groups.save', { customer_group_id: customer_group.id }), method: 'post', attr: { 'data-testid': 'customer-group-edit-form' } }) }}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            {{ form_label(form.code) }}
+                            {{ form_widget(form.code, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'A deployment or an API caller may refer to the group by its code: change it with them.'|trans }}</div>
+                        </div>
+                        <div class="col-md-8">
+                            {{ form_label(form.title) }}
+                            {{ form_widget(form.title, { attr: { class: 'form-control' } }) }}
+                        </div>
+                        <div class="col-12">
+                            {{ form_label(form.description) }}
+                            {{ form_widget(form.description, { attr: { class: 'form-control', rows: 3 } }) }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form_label(form.discount) }}
+                            {{ form_widget(form.discount, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'Taken off the prices of the members, before the discount of the customer.'|trans }}</div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-check form-switch">
+                                {{ form_widget(form.display_taxed_price, { attr: { class: 'form-check-input' } }) }}
+                                {{ form_label(form.display_taxed_price, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            <div class="form-check form-switch mt-2">
+                                {{ form_widget(form.is_default, { attr: { class: 'form-check-input' } }) }}
+                                {{ form_label(form.is_default, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            <div class="form-text">{{ 'Making this group the default releases the previous one. The shop always has exactly one default group.'|trans }}</div>
+                        </div>
+                        <div class="col-md-6" data-controller="bo-multiselect-search">
+                            {{ form_label(form.payment_module_ids) }}
+                            <input type="search" class="form-control mb-2" placeholder="{{ 'Filter…'|trans }}"
+                                   data-bo-multiselect-search-target="input"
+                                   data-action="input->bo-multiselect-search#filter"
+                                   data-testid="customer-group-payment-modules-filter">
+                            {{ form_widget(form.payment_module_ids, { attr: { class: 'form-select', size: 8, 'data-bo-multiselect-search-target': 'select', 'data-testid': 'customer-group-payment-modules' } }) }}
+                            <div class="form-text">{{ 'No payment module ticked: the group can use every payment module. Otherwise it can use only the ticked ones. Only the active payment modules are listed.'|trans }}</div>
+                        </div>
+                        <div class="col-md-6" data-controller="bo-multiselect-search">
+                            {{ form_label(form.category_ids) }}
+                            <input type="search" class="form-control mb-2" placeholder="{{ 'Filter…'|trans }}"
+                                   data-bo-multiselect-search-target="input"
+                                   data-action="input->bo-multiselect-search#filter"
+                                   data-testid="customer-group-categories-filter">
+                            {{ form_widget(form.category_ids, { attr: { class: 'form-select', size: 8, 'data-bo-multiselect-search-target': 'select', 'data-testid': 'customer-group-categories' } }) }}
+                            <div class="form-text">{{ 'No category ticked: the group sees the whole catalogue. Otherwise it sees only the ticked categories and their subcategories. The parent categories of a ticked category stay open to browse, so that it can be reached, but their own products are not shown.'|trans }}</div>
+                        </div>
+                    </div>
+                    {{ form_widget(form.id) }}
+                    {{ form_widget(form.locale) }}
+                    {{ safe_hook('customer-group.update-form', { customer_group_id: customer_group.id }) }}
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <a href="{{ path('admin.configuration.customer-groups.default') }}" class="btn btn-outline-secondary">{{ 'Back'|trans }}</a>
+                        {% if not sale_unit_restricted() %}
+                            <button type="submit" class="btn btn-primary" data-testid="customer-group-edit-submit"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}</button>
+                        {% endif %}
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+        {% if registration_available %}
+            <div class="card mt-3" data-testid="customer-group-registration">
+                <div class="card-header"><h2 class="h5 mb-0">{{ 'Registration link'|trans }}</h2></div>
+                <div class="card-body">
+                    {% if registration_url %}
+                        <p class="text-muted small">{{ 'Anyone who signs up through this link joins the group. Share it only with the people it is meant for.'|trans }}</p>
+                        <div class="input-group mb-3" data-controller="bo-copy-to-clipboard" data-bo-copy-to-clipboard-copied-label-value="{{ 'Copied'|trans }}">
+                            <input type="text" class="form-control" readonly value="{{ registration_url }}" data-bo-copy-to-clipboard-target="source" data-testid="customer-group-registration-url">
+                            <button type="button" class="btn btn-outline-secondary" data-action="bo-copy-to-clipboard#copy" data-testid="customer-group-registration-copy"><i class="bi bi-clipboard" aria-hidden="true"></i> {{ 'Copy'|trans }}</button>
+                        </div>
+                        {% if not sale_unit_restricted() %}
+                            <div class="d-flex flex-wrap gap-2">
+                                <form method="post" action="{{ path('admin.configuration.customer-groups.registration-regenerate') }}" class="m-0">
+                                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                    <input type="hidden" name="customer_group_id" value="{{ customer_group.id }}">
+                                    <button type="submit" class="btn btn-outline-warning" data-testid="customer-group-registration-regenerate"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ 'Regenerate'|trans }}</button>
+                                </form>
+                                <form method="post" action="{{ path('admin.configuration.customer-groups.registration-close') }}" class="m-0">
+                                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                    <input type="hidden" name="customer_group_id" value="{{ customer_group.id }}">
+                                    <button type="submit" class="btn btn-outline-danger" data-testid="customer-group-registration-close"><i class="bi bi-lock" aria-hidden="true"></i> {{ 'Close'|trans }}</button>
+                                </form>
+                            </div>
+                            <div class="form-text">{{ 'Regenerating gives a new link: the links already handed out stop working. Closing removes the link: nobody can sign up through it any more.'|trans }}</div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted small">{{ 'No registration link is open: visitors cannot sign up into this group. Open one to get a secret link that signs people up into it.'|trans }}</p>
+                        {% if not sale_unit_restricted() %}
+                            <form method="post" action="{{ path('admin.configuration.customer-groups.registration-open') }}" class="m-0">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                <input type="hidden" name="customer_group_id" value="{{ customer_group.id }}">
+                                <button type="submit" class="btn btn-outline-primary" data-testid="customer-group-registration-open"><i class="bi bi-link-45deg" aria-hidden="true"></i> {{ 'Open a registration link'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    {{ safe_hook('customer-group-edit.bottom', { customer_group_id: customer_group.id }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('customer-group.edit-js', { customer_group_id: customer_group.id }) }}
+{% endblock %}
