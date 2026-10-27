@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Tests\Unit\Translation;
 
+use BackOfficeDefaultTwigBundle\Controller\Configuration\CustomerGroupController;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFailureMessage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -40,25 +41,25 @@ final class BackOfficeTranslationTest extends TestCase
 
     /** The texts each catalogue lacks, as measured when it was last changed. */
     private const KNOWN_GAPS = [
-        'ar_SA' => 1410,
-        'cs_CZ' => 1290,
-        'de_DE' => 1277,
-        'el_GR' => 1410,
-        'es_ES' => 1219,
-        'fa_IR' => 1410,
-        'he_IL' => 1410,
-        'hu_HU' => 1410,
-        'id_ID' => 1410,
-        'it_IT' => 1219,
-        'nl_NL' => 1290,
-        'pl_PL' => 1410,
-        'pt_BR' => 1410,
-        'pt_PT' => 1410,
-        'ru_RU' => 1290,
-        'sk_SK' => 1410,
-        'tr_TR' => 1410,
-        'uk_UA' => 1410,
-        'zh_CN' => 1410,
+        'ar_SA' => 1469,
+        'cs_CZ' => 1349,
+        'de_DE' => 1336,
+        'el_GR' => 1469,
+        'es_ES' => 1278,
+        'fa_IR' => 1469,
+        'he_IL' => 1469,
+        'hu_HU' => 1469,
+        'id_ID' => 1469,
+        'it_IT' => 1278,
+        'nl_NL' => 1349,
+        'pl_PL' => 1469,
+        'pt_BR' => 1469,
+        'pt_PT' => 1469,
+        'ru_RU' => 1349,
+        'sk_SK' => 1469,
+        'tr_TR' => 1469,
+        'uk_UA' => 1469,
+        'zh_CN' => 1469,
     ];
 
     #[DataProvider('catalogues')]
@@ -113,6 +114,23 @@ final class BackOfficeTranslationTest extends TestCase
         }
 
         self::assertSame([], $translated);
+    }
+
+    /**
+     * The customer groups screen: the texts its controller names by constant, and the ones
+     * its template hands to the dialogs as plain strings, which the dialogs translate.
+     * French is complete; the other catalogues are counted by KNOWN_GAPS, as for every text.
+     */
+    public function testTheTextsOfTheCustomerGroupScreenNamedApartAreInFrench(): void
+    {
+        self::assertSame([], self::missingFrom('fr_FR', [
+            CustomerGroupController::REORDER_LABEL,
+            CustomerGroupController::DELETION_LABEL,
+            CustomerGroupController::GENERIC_FAILURE,
+            'Create a new customer group',
+            'Delete customer group',
+            'Do you really want to delete this customer group? Its customers move to the default group. The default group cannot be deleted.',
+        ]));
     }
 
     /**

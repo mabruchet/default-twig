@@ -1,0 +1,22 @@
+{#
+  Customer group picker: a plain multi-select, the groups being few. Used by the audience
+  of a catalog price rule and of a sale.
+
+  Parameters:
+    name       - the HTML name of the select (e.g. 'sale_customer_groups[]')
+    choices    - list of {id, label}, built by CustomerGroupRepository
+    selected   - list of already-selected group ids
+    testid     - prefix for the data-testid attribute ('<testid>-select')
+    id         - optional id for the select, so a label can point at it
+#}
+<select multiple
+        {% if id|default('') is not empty %}id="{{ id }}"{% endif %}
+        size="{{ min(max(choices|length, 3), 8) }}"
+        class="form-select"
+        name="{{ name }}"
+        data-testid="{{ testid }}-select">
+    {% for choice in choices %}
+        <option value="{{ choice.id }}" {{ choice.id in selected ? 'selected' : '' }}>{{ choice.label }}</option>
+    {% endfor %}
+</select>
+<span class="form-text small">{{ 'Use Ctrl+click to select (or deselect) more than one customer group.'|trans }}</span>

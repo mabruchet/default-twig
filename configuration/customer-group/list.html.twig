@@ -1,0 +1,120 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Customer groups'|trans }}{% endblock %}
+{% block body_testid %}configuration-customer-groups{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Customer groups'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {# A group changes the prices of every sale unit at once: an administrator restricted to some units only reads. #}
+    {% set can_write = not sale_unit_restricted() %}
+    {{ safe_hook('customer-group.top') }}
+
+    <div class="container-fluid" data-testid="customer-groups-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Customer groups'|trans }}</h1>
+            {% if can_write and is_granted('CREATE', 'admin.customer.group') %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#customer-group-create-modal" data-testid="customer-group-create-button">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a customer group'|trans }}
+                </button>
+            {% endif %}
+        </div>
+
+        <p class="text-muted">
+            {{ 'A customer group sets the discount, the price display, the payment modules and the categories of its members. A new account and a visitor belong to the default group.'|trans }}
+        </p>
+
+        {{ component('BoDataTable', {
+            id: 'customer-groups',
+            columns: [
+                column('id', 'ID'|trans, 'start', 'id', hideBelow: 'md'),
+                column('title', 'Title'|trans, 'start', 'title'),
+                column('code', 'Code'|trans, 'start', 'code', hideBelow: 'lg'),
+                column('discount', 'Discount'|trans, 'end', 'discount'),
+                column('display', 'Prices'|trans, 'start', hideBelow: 'lg'),
+                column('default', 'Default'|trans, 'center'),
+                column('position', 'Position'|trans, 'center', 'position', hideBelow: 'lg'),
+                column_actions('_actions', 'Actions'|trans),
+            ],
+            rows: rows,
+            emptyMessage: 'No customer group defined yet.'|trans,
+            extraColumnsHeaderHook: 'customer-group.table-header',
+            extraColumnsHook: 'customer-group.table-row',
+            rowHookArgs: { customer_group_id: 'id' },
+            sortField: sort_field,
+            sortDirection: sort_direction,
+            tbodyAttributes: can_write ? {
+                'data-controller': 'bo-sortable',
+                'data-bo-sortable-url-value': update_position_url,
+                'data-bo-sortable-token-value': update_position_token,
+                'data-bo-sortable-param-name-value': 'customer_group_id',
+            } : {},
+        }) }}
+    </div>
+
+    {{ safe_hook('customer-group.bottom') }}
+
+    {% if can_write %}
+    {% component 'BoCreateDialog' with {
+        id: 'customer-group-create-modal',
+        title: 'Create a new customer group',
+        form: create_form,
+        formAction: path('admin.configuration.customer-groups.create'),
+        submitLabel: 'Create',
+        testid: 'customer-group-create',
+        size: '',
+    } %}
+        {% block fields %}
+            <div class="mb-3">
+                {{ form_label(create_form.code) }}
+                {{ form_widget(create_form.code, { attr: { class: 'form-control' } }) }}
+                <div class="form-text">{{ 'The name a deployment or an API caller refers to the group by. Letters, digits, dots, dashes and underscores.'|trans }}</div>
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.title) }}
+                {{ form_widget(create_form.title, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.description) }}
+                {{ form_widget(create_form.description, { attr: { class: 'form-control', rows: 3 } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.discount) }}
+                {{ form_widget(create_form.discount, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form_widget(create_form.display_taxed_price, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.display_taxed_price, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form_widget(create_form.is_default, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.is_default, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            <div class="form-text mb-3">{{ 'The payment modules and the categories of the group are set once it is created.'|trans }}</div>
+            {{ form_widget(create_form.locale) }}
+        {% endblock %}
+    {% endcomponent %}
+
+    {{ component('BoConfirmDialog', {
+        id: 'customer-group-delete-modal',
+        title: 'Delete customer group',
+        formAction: path('admin.configuration.customer-groups.delete'),
+        message: 'Do you really want to delete this customer group? Its customers move to the default group. The default group cannot be deleted.',
+        testid: 'customer-group-delete',
+        prefillTrigger: 'data-customer-group-id',
+        prefillInput: 'customer_group_id',
+    }) }}
+    {% endif %}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('customer-group.js', { location: 'customer-group-js' }) }}
+{% endblock %}

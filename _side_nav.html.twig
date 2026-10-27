@@ -259,6 +259,9 @@
                             <li><a class="nav-link" href="{{ path('admin.configuration.countries.default') }}">{{ 'Countries'|trans }}</a></li>
                             <li><a class="nav-link" href="{{ path('admin.configuration.states.default') }}">{{ 'States'|trans }}</a></li>
                             <li><a class="nav-link" href="{{ path('admin.configuration.customer-titles.default') }}">{{ 'Customer titles'|trans }}</a></li>
+                            {% if is_granted('VIEW', 'admin.customer.group') %}
+                                <li><a class="nav-link" href="{{ path('admin.configuration.customer-groups.default') }}">{{ 'Customer groups'|trans }}</a></li>
+                            {% endif %}
                             <li><a class="nav-link" href="{{ path('admin.configuration.messages.default') }}">{{ 'Messages'|trans }}</a></li>
                             <li><a class="nav-link" href="{{ path('admin.mailingSystem.default') }}">{{ 'Mailing system'|trans }}</a></li>
                             <li><a class="nav-link" href="{{ path('admin.configuration.variables.default') }}">{{ 'Variables'|trans }}</a></li>
