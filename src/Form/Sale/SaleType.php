@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Form\Sale;
 
+use BackOfficeDefaultTwigBundle\Service\CustomerGroup\PostedCustomerGroupIds;
 use BackOfficeDefaultTwigBundle\Service\Sale\SaleCustomerIdsReader;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -39,6 +40,7 @@ final class SaleType extends AbstractType
     public function __construct(
         private readonly TranslatorInterface $translator,
         private readonly SaleCustomerIdsReader $customerIds,
+        private readonly PostedCustomerGroupIds $postedGroupIds,
     ) {
     }
 
@@ -115,11 +117,10 @@ final class SaleType extends AbstractType
                     'required' => true,
                     'expanded' => true,
                     'placeholder' => false,
-                    // Customer groups (Sale::AUDIENCE_MODE_CUSTOMER_GROUPS) are US #122:
-                    // nothing reads the groups yet, so the mode is not offered here.
                     'choices' => [
                         $this->translator->trans('Public') => Sale::AUDIENCE_MODE_PUBLIC,
                         $this->translator->trans('Reserved for named customers') => Sale::AUDIENCE_MODE_CUSTOMERS,
+                        $this->translator->trans('Reserved for customer groups') => Sale::AUDIENCE_MODE_CUSTOMER_GROUPS,
                     ],
                     'empty_data' => (string) Sale::AUDIENCE_MODE_PUBLIC,
                     'label' => $this->translator->trans('Who this sale is for'),
@@ -176,7 +177,7 @@ final class SaleType extends AbstractType
             }
 
             $audienceMode = (int) ($submitted['audience_mode'] ?? Sale::AUDIENCE_MODE_PUBLIC);
-            if ($audienceMode === Sale::AUDIENCE_MODE_CUSTOMERS || !\array_key_exists('hide_products', $submitted)) {
+            if (Sale::AUDIENCE_MODE_PUBLIC !== $audienceMode || !\array_key_exists('hide_products', $submitted)) {
                 return;
             }
 
@@ -241,13 +242,17 @@ final class SaleType extends AbstractType
             return;
         }
 
-        if ((int) $form->get('audience_mode')->getData() !== Sale::AUDIENCE_MODE_CUSTOMERS) {
-            return;
-        }
+        $audienceMode = (int) $form->get('audience_mode')->getData();
 
-        if ($this->customerIds->fromCurrentRequest() === []) {
+        if ($audienceMode === Sale::AUDIENCE_MODE_CUSTOMERS && $this->customerIds->fromCurrentRequest() === []) {
             $form->get('audience_mode')->addError(new FormError($this->translator->trans(
                 'A reserved sale must name at least one customer: select the customers it is for, or keep it public.',
+            )));
+        }
+
+        if ($audienceMode === Sale::AUDIENCE_MODE_CUSTOMER_GROUPS && $this->postedGroupIds->fromCurrentRequest(SaleCustomerIdsReader::GROUP_FIELD) === []) {
+            $form->get('audience_mode')->addError(new FormError($this->translator->trans(
+                'A sale reserved for customer groups must name at least one group: select the groups it is for, or keep it public.',
             )));
         }
     }

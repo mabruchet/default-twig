@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Form\CatalogPriceRule;
 
 use BackOfficeDefaultTwigBundle\Service\CatalogPriceRule\CatalogPriceRuleRequestReader;
+use BackOfficeDefaultTwigBundle\Service\CustomerGroup\PostedCustomerGroupIds;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -44,6 +45,7 @@ final class CatalogPriceRuleType extends AbstractType
     public function __construct(
         private readonly TranslatorInterface $translator,
         private readonly CatalogPriceRuleRequestReader $requestReader,
+        private readonly PostedCustomerGroupIds $postedGroupIds,
     ) {
     }
 
@@ -114,11 +116,10 @@ final class CatalogPriceRuleType extends AbstractType
                 'required' => true,
                 'expanded' => true,
                 'placeholder' => false,
-                // Customer groups (CatalogPriceRule::AUDIENCE_MODE_CUSTOMER_GROUPS) are
-                // US #122: nothing reads the groups yet, so the mode is not offered here.
                 'choices' => [
                     $this->translator->trans('Everyone') => CatalogPriceRule::AUDIENCE_MODE_PUBLIC,
                     $this->translator->trans('Named customers only') => CatalogPriceRule::AUDIENCE_MODE_CUSTOMERS,
+                    $this->translator->trans('Customer groups only') => CatalogPriceRule::AUDIENCE_MODE_CUSTOMER_GROUPS,
                 ],
                 'empty_data' => (string) CatalogPriceRule::AUDIENCE_MODE_PUBLIC,
                 'label' => $this->translator->trans('Who this rule prices for'),
@@ -177,6 +178,14 @@ final class CatalogPriceRuleType extends AbstractType
             && [] === $this->requestReader->customerIdsFromCurrentRequest()) {
             $form->get('audience_mode')->addError(new FormError($this->translator->trans(
                 'A rule reserved for named customers must name at least one customer: select the customers it is for, or open it to everyone.',
+            )));
+        }
+
+        if ($form->has('audience_mode')
+            && CatalogPriceRule::AUDIENCE_MODE_CUSTOMER_GROUPS === (int) $form->get('audience_mode')->getData()
+            && [] === $this->postedGroupIds->fromCurrentRequest(CatalogPriceRuleRequestReader::CUSTOMER_GROUPS_FIELD)) {
+            $form->get('audience_mode')->addError(new FormError($this->translator->trans(
+                'A rule reserved for customer groups must name at least one group: select the groups it is for, or open it to everyone.',
             )));
         }
     }

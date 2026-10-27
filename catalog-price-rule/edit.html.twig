@@ -23,6 +23,7 @@
          data-bo-catalog-price-rule-form-preview-url-value="{{ preview_url }}"
          data-bo-catalog-price-rule-form-percentage-type-value="{{ constant('Thelia\\Model\\CatalogPriceRule::EFFECT_TYPE_PERCENTAGE') }}"
          data-bo-catalog-price-rule-form-reserved-mode-value="{{ constant('Thelia\\Model\\CatalogPriceRule::AUDIENCE_MODE_CUSTOMERS') }}"
+         data-bo-catalog-price-rule-form-groups-mode-value="{{ constant('Thelia\\Model\\CatalogPriceRule::AUDIENCE_MODE_CUSTOMER_GROUPS') }}"
          data-bo-catalog-price-rule-form-count-template-value="{{ '%count% product(s) named'|trans }}"
          data-bo-catalog-price-rule-form-preview-failed-value="{{ 'The preview could not be computed. Check the form and try again.'|trans }}">
 
@@ -171,8 +172,9 @@
                         </div>
                     </div>
 
-                    {% set targeted_count = selected_customer_ids|length %}
-                    {% set reserved_for_nobody = rule_is_reserved and targeted_count == 0 %}
+                    {% set targeted_count = reserved_for_groups ? selected_customer_group_ids|length : selected_customer_ids|length %}
+                    {% set reserved_for_nobody = rule_is_reserved and not reserved_for_groups and targeted_count == 0 %}
+                    {% set reserved_for_no_group = reserved_for_groups and targeted_count == 0 %}
                     <div class="card mb-3" data-testid="catalog-price-rule-audience-card">
                         <div class="card-header">{{ 'Audience'|trans }}</div>
                         <div class="card-body">
@@ -204,12 +206,31 @@
                                         id: 'rule-customers-select',
                                         with_email: can_target_customers,
                                     } only %}
-                                    <div class="form-text">{{ 'A reserved rule is resolved when the customer reads a price; its prices are not stored ahead of time. Customer groups will come with a later version.'|trans }}</div>
+                                    <div class="form-text">{{ 'A reserved rule is resolved when the customer reads a price; its prices are not stored ahead of time.'|trans }}</div>
+                                </div>
+                                <div data-bo-catalog-price-rule-form-target="groupsField" data-testid="catalog-price-rule-groups-settings"
+                                     class="{{ form.audience_mode.vars.value == constant('Thelia\\Model\\CatalogPriceRule::AUDIENCE_MODE_CUSTOMER_GROUPS') ? '' : 'd-none' }}">
+                                    <label class="form-label" for="rule-customer-groups-select">{{ 'Customer groups this rule prices for'|trans }}</label>
+                                    {% if reserved_for_no_group %}
+                                        <div class="alert alert-danger py-2" data-testid="catalog-price-rule-groups-empty">
+                                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                            {{ 'Reserved, but no customer group is named any more: nobody gets this price. Select groups again, or open the rule to everyone.'|trans }}
+                                        </div>
+                                    {% endif %}
+                                    {% include '@BackOfficeDefaultTwig/fragments/customer-group-multiselect.html.twig' with {
+                                        name: 'rule_customer_groups[]',
+                                        choices: customer_group_choices,
+                                        selected: selected_customer_group_ids,
+                                        testid: 'catalog-price-rule-customer-groups',
+                                        id: 'rule-customer-groups-select',
+                                    } only %}
                                 </div>
                             {% else %}
                                 <div class="alert alert-warning mb-0" data-testid="catalog-price-rule-customers-warning">
                                     <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-                                    {% if rule_is_reserved %}
+                                    {% if reserved_for_groups %}
+                                        {{ 'This rule prices for %count% customer group(s). Changing who it is for needs the permission to view customers, so its current audience is kept as is when you save.'|trans({'%count%': targeted_count}) }}
+                                    {% elseif rule_is_reserved %}
                                         {{ 'This rule prices for %count% named customer(s). Changing who it is for needs the permission to view customers, so its current audience is kept as is when you save.'|trans({'%count%': targeted_count}) }}
                                     {% else %}
                                         {{ 'This rule prices for everyone. Reserving it for named customers needs the permission to view customers.'|trans }}

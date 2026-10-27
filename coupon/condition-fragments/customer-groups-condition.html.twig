@@ -1,0 +1,10 @@
+{% include '@BackOfficeDefaultTwig/coupon/condition-fragments/_multiselect_condition.html.twig' with {
+    field_name: field_name,
+    label: 'Customer group is :'|trans,
+    choices: customer_groups_choices,
+    selected_values: selected_values,
+    available_operators: available_operators,
+    validators: validators,
+    testid: 'coupon-customer-groups',
+    help: 'Use Ctrl+click to select (or deselect) more than one customer group. A visitor without an account belongs to the default group.'|trans,
+} only %}

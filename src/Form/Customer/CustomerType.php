@@ -153,6 +153,18 @@ final class CustomerType extends AbstractType
             ->add('reseller', CheckboxType::class, [
                 'required' => false,
                 'label' => $tr->trans('Is a reseller'),
+            ])
+            // Left unset on a creation, the core files the account under the default group;
+            // an existing account always holds one, so the edit form offers no empty choice.
+            ->add('customer_group_id', ChoiceType::class, [
+                'choices' => $options['group_choices'],
+                'required' => $options['include_id'],
+                'constraints' => $options['include_id'] ? [new NotBlank()] : [],
+                'label' => $tr->trans('Customer group'),
+                // Read-only for an administrator restricted to some sale units: a group moves the
+                // prices of every unit at once. A disabled field keeps the data it was given.
+                'disabled' => $options['group_locked'],
+                'placeholder' => $options['include_id'] ? false : $tr->trans('Default group'),
             ]);
 
         if ($options['include_tags']) {
@@ -248,6 +260,7 @@ final class CustomerType extends AbstractType
             ->setDefaults([
                 'include_id' => false,
                 'include_tags' => false,
+                'group_locked' => false,
                 'tag_choices' => [],
                 'tag_colors' => [],
                 'include_password' => false,
@@ -258,9 +271,10 @@ final class CustomerType extends AbstractType
                 'states' => [],
                 'constraints' => [new Callback($this->checkLegalIdentifiers(...))],
             ])
-            ->setRequired(['title_choices', 'country_choices', 'lang_choices'])
+            ->setRequired(['title_choices', 'country_choices', 'lang_choices', 'group_choices'])
             ->setAllowedTypes('include_id', 'bool')
             ->setAllowedTypes('include_tags', 'bool')
+            ->setAllowedTypes('group_locked', 'bool')
             ->setAllowedTypes('tag_choices', 'array')
             ->setAllowedTypes('tag_colors', 'array')
             ->setAllowedTypes('include_address', 'bool')
@@ -270,6 +284,7 @@ final class CustomerType extends AbstractType
             ->setAllowedTypes('title_choices', 'array')
             ->setAllowedTypes('country_choices', 'array')
             ->setAllowedTypes('lang_choices', 'array')
+            ->setAllowedTypes('group_choices', 'array')
             ->setAllowedTypes('states', 'array');
     }
 }

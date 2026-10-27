@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Coupon;
 
+use BackOfficeDefaultTwigBundle\Repository\CustomerGroupRepository;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerChoiceProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use Psr\Container\ContainerInterface;
@@ -27,6 +28,7 @@ use Thelia\Condition\Implementation\AbstractMatchCountries;
 use Thelia\Condition\Implementation\CartContainsCategories;
 use Thelia\Condition\Implementation\CartContainsProducts;
 use Thelia\Condition\Implementation\ConditionInterface;
+use Thelia\Condition\Implementation\ForSomeCustomerGroups;
 use Thelia\Condition\Implementation\ForSomeCustomers;
 use Thelia\Condition\Implementation\MatchDeliveryModules;
 use Thelia\Condition\Implementation\MatchForEveryone;
@@ -54,6 +56,7 @@ final readonly class CouponConditionsRenderer
         private TranslatorInterface $translator,
         private CountryStateProvider $countryStates,
         private CustomerChoiceProvider $customerChoiceProvider,
+        private CustomerGroupRepository $customerGroups,
         #[Autowire(service: 'thelia.condition.factory')]
         private ConditionFactory $conditionFactory,
         #[Autowire(service: 'service_container')]
@@ -151,6 +154,7 @@ final readonly class CouponConditionsRenderer
             $condition instanceof MatchForTotalAmount => '@BackOfficeDefaultTwig/coupon/condition-fragments/cart-total-amount-condition.html.twig',
             $condition instanceof MatchForXArticles => '@BackOfficeDefaultTwig/coupon/condition-fragments/cart-item-count-condition.html.twig',
             $condition instanceof ForSomeCustomers => '@BackOfficeDefaultTwig/coupon/condition-fragments/customers-condition.html.twig',
+            $condition instanceof ForSomeCustomerGroups => '@BackOfficeDefaultTwig/coupon/condition-fragments/customer-groups-condition.html.twig',
             $condition instanceof MatchDeliveryModules => '@BackOfficeDefaultTwig/coupon/condition-fragments/delivery-modules-condition.html.twig',
             $condition instanceof AbstractMatchCountries => '@BackOfficeDefaultTwig/coupon/condition-fragments/countries-condition.html.twig',
             $condition instanceof CartContainsCategories => '@BackOfficeDefaultTwig/coupon/condition-fragments/cart-contains-categories-condition.html.twig',
@@ -212,6 +216,11 @@ final readonly class CouponConditionsRenderer
                 'selected_values' => $this->normalizeIdList($setValues[ForSomeCustomers::CUSTOMERS_LIST] ?? []),
                 'customers_choices' => $this->customerChoices($setValues[ForSomeCustomers::CUSTOMERS_LIST] ?? []),
                 'customers_choices_show_email' => $this->customerChoiceProvider->labelsIncludeEmail(),
+            ]),
+            $condition instanceof ForSomeCustomerGroups => array_merge($params, [
+                'field_name' => ForSomeCustomerGroups::CUSTOMER_GROUPS_LIST,
+                'selected_values' => $this->normalizeIdList($setValues[ForSomeCustomerGroups::CUSTOMER_GROUPS_LIST] ?? []),
+                'customer_groups_choices' => $this->customerGroups->findChoices($locale),
             ]),
             default => $params,
         };

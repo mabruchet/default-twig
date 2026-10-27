@@ -24,6 +24,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormErrorRenderer;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormValidator;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilterCatalog;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilters;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerListRowPresenter;
@@ -32,6 +33,7 @@ use BackOfficeDefaultTwigBundle\Service\Customer\CustomerPaymentMethodsProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\StateChoiceProvider;
+use BackOfficeDefaultTwigBundle\Service\SaleUnit\RestrictedAdminGuard;
 use BackOfficeDefaultTwigBundle\Service\Tag\TagSwatch;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -47,6 +49,8 @@ use Thelia\Core\Event\Customer\CustomerCreateOrUpdateEvent;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\Customer\Exception\UnknownCustomerGroupException;
+use Thelia\Domain\Customer\Service\CustomerGroupAssignment;
 use Thelia\Domain\Customer\Service\CustomerTitleService;
 use Thelia\Domain\Tagging\Service\TagService;
 use Thelia\Mailer\MailerFactory;
@@ -91,6 +95,7 @@ final class CustomerController
         private readonly CustomerRepository $customerRepository,
         private readonly CountryRepository $countryRepository,
         private readonly CustomerFilterPresenter $filterPresenter,
+        private readonly CustomerFilterCatalog $filterCatalog,
         private readonly CustomerListRowPresenter $rowPresenter,
         private readonly OrderRepository $orderRepository,
         private readonly StateChoiceProvider $stateChoices,
@@ -100,6 +105,8 @@ final class CustomerController
         private readonly TagSwatch $swatch,
         private readonly CustomerOverviewProvider $overviewProvider,
         private readonly CustomerPaymentMethodsProvider $paymentMethods,
+        private readonly CustomerGroupAssignment $groupAssignment,
+        private readonly RestrictedAdminGuard $restricted,
     ) {
     }
 
@@ -114,7 +121,7 @@ final class CustomerController
         $locale = $request->getLocale();
         $filters = CustomerFilters::fromRequest($request);
 
-        $paginated = $this->customerRepository->findPaginated($filters, $page, self::PAGE_SIZE);
+        $paginated = $this->customerRepository->findPaginated($filters, $page, self::PAGE_SIZE, $locale);
 
         $customerIds = [];
         foreach ($paginated['rows'] as $customer) {
@@ -126,6 +133,7 @@ final class CustomerController
         $lastOrders = $this->customerRepository->findLastOrderDateByCustomer($customerIds);
         $phones = $this->customerRepository->findPrimaryPhones($customerIds);
         $primaryCountryIds = $this->customerRepository->findPrimaryCountryIds($customerIds);
+        $groupLabels = array_column($this->filterCatalog->groups($locale), 'title', 'id');
         $countriesIndex = $this->buildCountriesIndex($primaryCountryIds, $locale);
         $tagsByCustomer = $this->tags->findTagsForMany(TagElement::ELEMENT_KEY_CUSTOMER, $customerIds);
 
@@ -145,6 +153,7 @@ final class CustomerController
                 countryFlag: $country['flag'],
                 countryTitle: $country['title'],
                 tags: $tagsByCustomer[$customerId] ?? [],
+                groupLabel: $groupLabels[(int) $customer->getCustomerGroupId()] ?? '',
             );
         }
 
@@ -243,8 +252,12 @@ final class CustomerController
     }
 
     #[Route('/customer/create', name: 'customer.create', methods: ['POST'])]
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        if ($denied = $this->refuseGroupChange($request, self::CREATE_FORM_NAME, null, AccessManager::CREATE)) {
+            return $denied;
+        }
+
         $form = $this->buildCreateForm($this->defaultLocale());
 
         return $this->action->submit(
@@ -276,8 +289,17 @@ final class CustomerController
 
         // Decided from the database, never from the submitted payload: an address may have been
         // added between the GET and this POST, and the form shape must follow the current state.
+        if ($denied = $this->refuseGroupChange($request, self::UPDATE_FORM_NAME, $customer->getCustomerGroupId(), AccessManager::UPDATE)) {
+            return $denied;
+        }
+
         $hasAddress = $customer->getDefaultAddress() !== null;
-        $form = $this->buildUpdateForm($this->defaultLocale(), null, $hasAddress);
+        // A restricted administrator's group field is disabled: it keeps the group the account holds.
+        $form = $this->buildUpdateForm(
+            $this->defaultLocale(),
+            $this->restricted->isRestricted() ? ['customer_group_id' => $customer->getCustomerGroupId()] : null,
+            $hasAddress,
+        );
 
         try {
             $validated = $this->validator->validate($form);
@@ -320,6 +342,15 @@ final class CustomerController
             }
 
             return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['customer_id' => $savedCustomerId]));
+        } catch (UnknownCustomerGroupException $exception) {
+            $this->errorRenderer->refuse(
+                $this->translator->trans('Customer update'),
+                $this->translator->trans('The customer group does not exist any more: pick another one.'),
+                $form,
+                $exception,
+            );
+
+            return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['customer_id' => $customerId]));
         } catch (\Throwable $exception) {
             $this->errorRenderer->fail(
                 $this->translator->trans('Customer update'),
@@ -359,6 +390,24 @@ final class CustomerController
             actionLabel: 'Customer deletion',
             successRoute: self::LIST_ROUTE,
         );
+    }
+
+    /**
+     * A group moves the prices of every sale unit at once: an administrator restricted to some
+     * units does not choose one, and a post that tries is refused whole, nothing written.
+     */
+    private function refuseGroupChange(Request $request, string $formName, ?int $currentGroupId, string $access): ?Response
+    {
+        if (!$this->restricted->isRestricted()) {
+            return null;
+        }
+
+        $posted = $request->request->all($formName)['customer_group_id'] ?? '';
+        if (!\is_scalar($posted) || '' === (string) $posted || (null !== $currentGroupId && (int) $posted === $currentGroupId)) {
+            return null;
+        }
+
+        return $this->restricted->denyIfRestricted(self::RESOURCE, $access);
     }
 
     private function flashError(Request $request, string $message): void
@@ -417,6 +466,13 @@ final class CustomerController
 
         $this->events->dispatch($event, TheliaEvents::CUSTOMER_UPDATEPROFILE);
 
+        // CUSTOMER_UPDATEPROFILE ignores the group: the customer is moved once the event has
+        // saved it, so an account with no address can be moved as well, and the core says so.
+        $groupId = $event->getCustomerGroupId();
+        if ($groupId !== null) {
+            $this->groupAssignment->assign($customer, $groupId);
+        }
+
         if (($plainPassword !== null && $plainPassword !== '' && $plainPassword !== '0') || $emailChanged) {
             $this->mailer->sendEmailToCustomer('customer_account_changed', $customer, ['password' => $plainPassword]);
         }
@@ -431,6 +487,8 @@ final class CustomerController
             'title_choices' => $this->titleService->getTitleAsFormChoices(),
             'country_choices' => $this->countryChoices($locale),
             'lang_choices' => $this->langChoices(),
+            'group_choices' => $this->groupChoices($locale),
+            'group_locked' => $this->restricted->isRestricted(),
             'states' => $this->stateChoices->forLocale($locale),
         ];
     }
@@ -472,6 +530,7 @@ final class CustomerController
             state: isset($data['state']) && $data['state'] !== '' ? (int) $data['state'] : null,
             siret: $this->stringOrNull($data['siret'] ?? null),
             vatNumber: $this->stringOrNull($data['vat_number'] ?? null),
+            customerGroupId: isset($data['customer_group_id']) && $data['customer_group_id'] !== '' ? (int) $data['customer_group_id'] : null,
         );
     }
 
@@ -670,6 +729,7 @@ final class CustomerController
             'lang_id' => $customer->getLangId(),
             'discount' => $customer->getDiscount(),
             'reseller' => (bool) $customer->getReseller(),
+            'customer_group_id' => $customer->getCustomerGroupId(),
             'tags' => $this->currentTagLabels((int) $customer->getId()),
             'new_tags' => '',
         ];
@@ -693,6 +753,19 @@ final class CustomerController
             'country' => $address->getCountryId(),
             'state' => $address->getStateId(),
         ]);
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function groupChoices(string $locale): array
+    {
+        $choices = [];
+        foreach ($this->filterCatalog->groups($locale) as $group) {
+            $choices[$group['title']] = $group['id'];
+        }
+
+        return $choices;
     }
 
     /**

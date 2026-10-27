@@ -30,6 +30,9 @@ final readonly class SaleCustomerIdsReader
 {
     public const FIELD = 'sale_customers';
 
+    /** The picker of the customer groups, read by {@see \BackOfficeDefaultTwigBundle\Service\CustomerGroup\PostedCustomerGroupIds}. */
+    public const GROUP_FIELD = 'sale_customer_groups';
+
     public function __construct(
         private RequestStack $requestStack,
     ) {

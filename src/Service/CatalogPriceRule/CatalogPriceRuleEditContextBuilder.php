@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\CatalogPriceRule;
 
+use BackOfficeDefaultTwigBundle\Repository\CustomerGroupRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerChoiceProvider;
 use Propel\Runtime\ActiveQuery\Criteria;
@@ -42,6 +43,7 @@ final readonly class CatalogPriceRuleEditContextBuilder
         private CustomerChoiceProvider $customerChoices,
         private AdminAccessChecker $access,
         private CatalogPriceRuleOverviewQuery $overview,
+        private CustomerGroupRepository $customerGroups,
     ) {
     }
 
@@ -52,6 +54,7 @@ final readonly class CatalogPriceRuleEditContextBuilder
     {
         $criteria = $rule->getCriteriaByType();
         $selectedCustomerIds = $this->customerIds($rule);
+        $selectedGroupIds = $rule->getCustomerGroupIds();
         $canTargetCustomers = $this->canTargetCustomers();
         $overview = $this->overview->forRule((int) $rule->getId());
 
@@ -88,6 +91,9 @@ final readonly class CatalogPriceRuleEditContextBuilder
             'rule_is_reserved' => $rule->isReserved(),
             'customer_choices' => $canTargetCustomers ? $this->customerChoices->choices($selectedCustomerIds) : [],
             'selected_customer_ids' => $selectedCustomerIds,
+            'customer_group_choices' => $canTargetCustomers ? $this->customerGroups->findChoices($locale) : [],
+            'selected_customer_group_ids' => $selectedGroupIds,
+            'reserved_for_groups' => CatalogPriceRule::AUDIENCE_MODE_CUSTOMER_GROUPS === (int) $rule->getAudienceMode(),
             'latest_customers_limit' => CustomerChoiceProvider::LATEST_LIMIT,
             'coverage' => [
                 'products' => null === $overview ? 0 : $overview->productCount,

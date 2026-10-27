@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Service\Customer;
 
 use BackOfficeDefaultTwigBundle\Repository\CountryRepository;
+use BackOfficeDefaultTwigBundle\Repository\CustomerGroupRepository;
 use BackOfficeDefaultTwigBundle\Repository\CustomerRepository;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
 use BackOfficeDefaultTwigBundle\Service\Tag\TagSwatch;
@@ -36,6 +37,9 @@ final class CustomerFilterCatalog
     /** @var array<string, list<array{id: int, title: string}>> */
     private array $titlesByLocale = [];
 
+    /** @var array<string, list<array{id: int, title: string}>> */
+    private array $groupsByLocale = [];
+
     /** @var list<array{id: int, title: string, color: string}>|null */
     private ?array $tags = null;
 
@@ -47,6 +51,7 @@ final class CustomerFilterCatalog
 
     public function __construct(
         private readonly CustomerRepository $customers,
+        private readonly CustomerGroupRepository $customerGroups,
         private readonly CountryRepository $countries,
         private readonly TagSwatch $swatch,
     ) {
@@ -94,6 +99,20 @@ final class CustomerFilterCatalog
     public function titles(string $locale): array
     {
         return $this->titlesByLocale[$locale] ??= $this->customers->findTitlesLocalized($locale);
+    }
+
+    /**
+     * The one read of the group titles of a request: the filter form, the creation form and
+     * the group column of the list all come from here.
+     *
+     * @return list<array{id: int, title: string}>
+     */
+    public function groups(string $locale): array
+    {
+        return $this->groupsByLocale[$locale] ??= array_map(
+            static fn (array $choice): array => ['id' => $choice['id'], 'title' => $choice['label']],
+            $this->customerGroups->findChoices($locale),
+        );
     }
 
     /**

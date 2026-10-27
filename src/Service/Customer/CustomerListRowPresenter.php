@@ -59,6 +59,7 @@ final readonly class CustomerListRowPresenter
         string $countryFlag,
         string $countryTitle,
         array $tags,
+        string $groupLabel = '',
     ): array {
         $customerId = (int) $customer->getId();
         $firstname = (string) $customer->getFirstname();
@@ -72,6 +73,7 @@ final readonly class CustomerListRowPresenter
             'ref_html' => $this->renderRef($customerId, (string) ($customer->getRef() ?: '-')),
             'name_html' => $this->renderName($customerId, $firstname, $lastname, $email, $countryFlag, $countryTitle),
             'phone_html' => $this->renderPhone($phone),
+            'group_html' => $this->renderGroup($groupLabel),
             'orders_html' => $this->renderOrders($customerId, $orderCount),
             'total_spent_html' => $this->renderTotalSpent($totalSpent, $orderCount, $locale),
             'last_order_html' => $this->renderLastOrder($lastOrderAt),
@@ -130,6 +132,15 @@ final readonly class CustomerListRowPresenter
         }
 
         return \sprintf('<span class="bo-customer-phone">%s</span>', htmlspecialchars($phone));
+    }
+
+    private function renderGroup(string $label): string
+    {
+        if ($label === '') {
+            return '<span class="text-muted">-</span>';
+        }
+
+        return \sprintf('<span class="badge text-bg-light bo-customer-group">%s</span>', htmlspecialchars($label));
     }
 
     private function renderOrders(int $customerId, int $count): string
@@ -198,7 +209,6 @@ final readonly class CustomerListRowPresenter
             htmlspecialchars($relative),
         );
     }
-
 
     /**
      * @param list<Tag> $tags
