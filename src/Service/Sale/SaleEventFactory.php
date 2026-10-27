@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Service\Sale;
 
 use BackOfficeDefaultTwigBundle\Repository\SaleRepository;
+use BackOfficeDefaultTwigBundle\Service\CustomerGroup\PostedCustomerGroupIds;
 use Symfony\Component\HttpFoundation\Request;
 use Thelia\Core\Event\Sale\SaleCreateEvent;
 use Thelia\Core\Event\Sale\SaleUpdateEvent;
@@ -26,6 +27,7 @@ final readonly class SaleEventFactory
     public function __construct(
         private SaleRepository $sales,
         private SaleCustomerIdsReader $customerIds,
+        private PostedCustomerGroupIds $postedGroupIds,
     ) {
     }
 
@@ -92,7 +94,8 @@ final readonly class SaleEventFactory
             $event
                 ->setAudienceMode((int) ($sale?->getAudienceMode() ?? Sale::AUDIENCE_MODE_PUBLIC))
                 ->setHideProducts((bool) $sale?->getHideProducts())
-                ->setCustomerIds($sale === null ? [] : $this->storedCustomerIds($sale));
+                ->setCustomerIds($sale === null ? [] : $this->storedCustomerIds($sale))
+                ->setCustomerGroupIds($sale === null ? [] : $sale->getCustomerGroupIds());
 
             return;
         }
@@ -103,6 +106,11 @@ final readonly class SaleEventFactory
             ->setHideProducts((bool) ($formData['hide_products'] ?? false))
             ->setCustomerIds(
                 $audienceMode === Sale::AUDIENCE_MODE_CUSTOMERS ? $this->customerIds->fromRequest($request) : [],
+            )
+            ->setCustomerGroupIds(
+                $audienceMode === Sale::AUDIENCE_MODE_CUSTOMER_GROUPS
+                    ? $this->postedGroupIds->fromRequest($request, SaleCustomerIdsReader::GROUP_FIELD)
+                    : [],
             );
     }
 

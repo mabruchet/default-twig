@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Sale;
 
+use BackOfficeDefaultTwigBundle\Repository\CustomerGroupRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerChoiceProvider;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -33,6 +34,7 @@ final readonly class SaleEditContextBuilder
         private SaleProductAttributesProvider $productAttributesProvider,
         private CustomerChoiceProvider $customerChoices,
         private AdminAccessChecker $access,
+        private CustomerGroupRepository $customerGroups,
     ) {
     }
 
@@ -50,6 +52,9 @@ final readonly class SaleEditContextBuilder
      *     sale_is_reserved: bool,
      *     customer_choices: list<array{id: int, label: string}>,
      *     selected_customer_ids: list<int>,
+     *     customer_group_choices: list<array{id: int, label: string}>,
+     *     selected_customer_group_ids: list<int>,
+     *     reserved_for_groups: bool,
      *     latest_customers_limit: int
      * }
      */
@@ -118,6 +123,11 @@ final readonly class SaleEditContextBuilder
             'sale_is_reserved' => $sale->isReserved(),
             'customer_choices' => $canTargetCustomers ? $this->customerChoices->choices($selectedCustomerIds) : [],
             'selected_customer_ids' => $selectedCustomerIds,
+            // Groups hold no personal data, but the mode is chosen next to the customers one,
+            // under the same right: the picker is only built where the audience can be edited.
+            'customer_group_choices' => $canTargetCustomers ? $this->customerGroups->findChoices($locale) : [],
+            'selected_customer_group_ids' => $sale->getCustomerGroupIds(),
+            'reserved_for_groups' => Sale::AUDIENCE_MODE_CUSTOMER_GROUPS === (int) $sale->getAudienceMode(),
             'latest_customers_limit' => CustomerChoiceProvider::LATEST_LIMIT,
         ];
     }

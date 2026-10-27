@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Tests\Http;
 
 use BackOfficeDefaultTwigBundle\Controller\Customer\CustomerReturnsController;
 use BackOfficeDefaultTwigBundle\Tests\Support\QueryCounter;
+use PHPUnit\Framework\Attributes\Depends;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -49,19 +50,6 @@ use Thelia\Tests\Support\BackOffice\AdminSessionInjector;
  */
 final class CustomerSheetTest extends WebIntegrationTestCase
 {
-    /**
-     * Measured on the sheet with 200 orders: 40 queries on a cold request, 21 once the
-     * request-scoped memos are warm (37 and 19 before the figures and the sections). The
-     * cold count moves by one between runs, hence the margin. The sidebar total of orders
-     * is read again on every request (22 warm), as the memo of the sidebar is reset
-     * between two requests: it holds the figures of the administrator of the request.
-     * With returns on, the number of returns of the customer is one query more (23 warm).
-     * The stored payment methods of the customer cost one more query, whatever the number
-     * of stored methods (one LEFT JOIN query; 43 cold, 24 warm).
-     */
-    private const COLD_QUERY_BUDGET = 43;
-    private const WARM_QUERY_BUDGET = 24;
-
     private AdminSessionInjector $injector;
 
     private FixtureFactory $factory;
@@ -513,18 +501,51 @@ final class CustomerSheetTest extends WebIntegrationTestCase
     }
 
     /**
-     * Two hundred orders in every status: the sheet costs the same number of queries as
-     * with a handful, and the carts are not read until their section opens. The budget
-     * is the count measured on this sheet, so a query per order or per row breaks it. The
-     * shop has returns on, the costliest sheet: the setting is written here, as an earlier
-     * test may have left it either way in the configuration cache.
+     * The sheet of a customer with a single order, measured on a kernel of its own: the
+     * queries of a cold request (the first of the kernel, which reads what the services
+     * remember) and of a warm one. The next test measures the same customer with two
+     * hundred orders against these figures, so a query per order or per row breaks it,
+     * whatever the modules this shop links.
+     *
+     * @return array{cold: int, warm: int}
      */
-    public function testACustomerWithTwoHundredOrdersOpensWithinAFixedQueryBudget(): void
+    public function testTheSheetOfACustomerWithOneOrderIsMeasured(): array
+    {
+        $measured = $this->measureTheSheetWith(1);
+
+        self::assertGreaterThan(0, $measured['cold']);
+        self::assertGreaterThanOrEqual($measured['warm'], $measured['cold'], 'A warm request does not read more than a cold one.');
+
+        return $measured;
+    }
+
+    /**
+     * Two hundred orders in every status: the sheet costs exactly the number of queries it
+     * costs with one, cold and warm, and the carts are not read until their section opens.
+     * Each measure is taken on a kernel of its own, the shop has returns on (the costliest
+     * sheet), and the setting is written by the measure, as an earlier test may have left
+     * it either way in the configuration cache.
+     *
+     * @param array{cold: int, warm: int} $withOneOrder
+     */
+    #[Depends('testTheSheetOfACustomerWithOneOrderIsMeasured')]
+    public function testTheSameSheetWithTwoHundredOrdersCostsTheSameNumberOfQueries(array $withOneOrder): void
+    {
+        $withTwoHundred = $this->measureTheSheetWith(200);
+
+        self::assertSame($withOneOrder['cold'], $withTwoHundred['cold'], 'Cold: the sheet costs the same with one order and with two hundred.');
+        self::assertSame($withOneOrder['warm'], $withTwoHundred['warm'], 'Warm: the sheet costs the same with one order and with two hundred.');
+    }
+
+    /**
+     * @return array{cold: int, warm: int} the queries of the first request of the kernel to the sheet, and of the second
+     */
+    private function measureTheSheetWith(int $orderCount): array
     {
         ConfigQuery::write('order_return_enabled', '1');
         $customer = $this->customer();
         $codes = [OrderStatus::CODE_PAID, OrderStatus::CODE_SENT, OrderStatus::CODE_CANCELED, OrderStatus::CODE_NOT_PAID, OrderStatus::CODE_PROCESSING, OrderStatus::CODE_REFUNDED];
-        for ($i = 0; $i < 200; ++$i) {
+        for ($i = 0; $i < $orderCount; ++$i) {
             $this->factory->order($customer, ['statusCode' => $codes[$i % \count($codes)], 'postage' => '10']);
         }
         $admin = $this->factory->admin();
@@ -546,8 +567,8 @@ final class CustomerSheetTest extends WebIntegrationTestCase
         $warm = QueryCounter::count(function () use ($url): void {
             $this->client->request('GET', $url);
         });
-        self::assertLessThanOrEqual(self::COLD_QUERY_BUDGET, $cold);
-        self::assertLessThanOrEqual(self::WARM_QUERY_BUDGET, $warm);
+
+        return ['cold' => $cold, 'warm' => $warm];
     }
 
     private function listen(string $eventName, callable $listener): void

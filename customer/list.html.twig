@@ -333,6 +333,27 @@
                             {% endif %}
                         </fieldset>
                     </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <fieldset>
+                            <legend class="form-label">{{ 'Customer group'|trans }}</legend>
+                            {% if filters.group_options %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for option in filters.group_options %}
+                                        {% set checked = option.id in filters.selected_group_ids %}
+                                        <label class="bo-customer-filters__pill" data-checked="{{ checked ? 'true' : 'false' }}">
+                                            <input type="checkbox" class="visually-hidden" name="group_ids[]"
+                                                   value="{{ option.id }}" {{ checked ? 'checked' : '' }}
+                                                   data-testid="customer-filter-group-{{ option.id }}">
+                                            {{ option.title }}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted small mb-0">{{ 'No customer group available'|trans }}</p>
+                            {% endif %}
+                        </fieldset>
+                    </div>
                 </div>
             </div>
 
@@ -379,6 +400,7 @@
                     column_html('name_html', 'Customer'|trans, 'start', 'lastname'),
                     column_html('phone_html', 'Phone'|trans, visibleFrom: 'xl'),
                     column_html('country_html', 'Country'|trans, visibleFrom: 'xl'),
+                    column_html('group_html', 'Group'|trans, 'start', 'group', visibleFrom: 'lg'),
                     column_html('orders_html', 'Orders'|trans, 'center', visibleFrom: 'lg'),
                     column_html('total_spent_html', 'Total spent'|trans, 'end', 'total_spent'),
                     column_html('last_order_html', 'Last order'|trans, 'start', visibleFrom: 'xl'),

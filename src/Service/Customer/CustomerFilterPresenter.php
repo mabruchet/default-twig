@@ -42,23 +42,26 @@ final readonly class CustomerFilterPresenter
         $countries = $this->catalog->referencedCountries($locale);
         $langs = $this->catalog->langs();
         $titles = $this->catalog->titles($locale);
+        $groups = $this->catalog->groups($locale);
         $tags = $this->catalog->tags();
 
         $countryIndex = $this->indexById($countries);
         $langIndex = $this->indexById($langs);
         $titleIndex = $this->indexById($titles);
+        $groupIndex = $this->indexById($groups);
         $tagIndex = $this->indexById($tags);
 
         return [
             'is_empty' => $filters->isEmpty(),
             'has_any_filter' => !$filters->isEmpty() || $filters->search !== '' || $filters->period !== CustomerFilters::PERIOD_ALL,
             'advanced_count' => $this->countAdvancedFilters($filters),
-            'active_chips' => $this->buildActiveChips($filters, $countryIndex, $langIndex, $titleIndex, $tagIndex, $locale),
+            'active_chips' => $this->buildActiveChips($filters, $countryIndex, $langIndex, $titleIndex, $groupIndex, $tagIndex, $locale),
             'clear_all_url' => $this->urls->generate(self::LIST_ROUTE),
 
             'country_options' => $countries,
             'lang_options' => $langs,
             'title_options' => $titles,
+            'group_options' => $groups,
             'tag_options' => $tags,
             'tristate_options' => $this->tristateOptions(),
             'newsletter_options' => $this->newsletterOptions(),
@@ -68,6 +71,7 @@ final readonly class CustomerFilterPresenter
             'selected_country_id' => $filters->countryId,
             'selected_lang_ids' => $filters->langIds,
             'selected_title_ids' => $filters->titleIds,
+            'selected_group_ids' => $filters->groupIds,
             'selected_tag_ids' => $filters->tagIds,
             'newsletter_value' => $this->triStateValue($filters->newsletter),
             'guest_value' => $this->triStateValue($filters->guest),
@@ -96,6 +100,7 @@ final readonly class CustomerFilterPresenter
      * @param array<int, array{id: int, title: string, flag: string, iso: string}> $countryIndex
      * @param array<int, array{id: int, title: string, code: string}>              $langIndex
      * @param array<int, array{id: int, title: string}>                            $titleIndex
+     * @param array<int, array{id: int, title: string}>                            $groupIndex
      *
      * @return list<array{key: string, label: string, value: string, remove_url: string}>
      */
@@ -104,6 +109,7 @@ final readonly class CustomerFilterPresenter
         array $countryIndex,
         array $langIndex,
         array $titleIndex,
+        array $groupIndex,
         array $tagIndex,
         string $locale,
     ): array {
@@ -197,6 +203,15 @@ final readonly class CustomerFilterPresenter
                 CustomerFilters::KEY_TITLE_IDS,
                 $this->translator->trans('Customer title'),
                 $this->joinTitles($filters->titleIds, $titleIndex),
+            );
+        }
+
+        if ($filters->groupIds !== []) {
+            $chips[] = $this->chip(
+                $filters,
+                CustomerFilters::KEY_GROUP_IDS,
+                $this->translator->trans('Customer group'),
+                $this->joinTitles($filters->groupIds, $groupIndex),
             );
         }
 
@@ -425,6 +440,9 @@ final readonly class CustomerFilterPresenter
             ++$count;
         }
         if ($filters->titleIds !== []) {
+            ++$count;
+        }
+        if ($filters->groupIds !== []) {
             ++$count;
         }
         if ($filters->tagIds !== []) {

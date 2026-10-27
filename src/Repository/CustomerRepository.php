@@ -44,6 +44,8 @@ final readonly class CustomerRepository
         'created_at' => 'createdAt',
     ];
 
+    private const GROUP_SORT = 'group';
+
     public const COMPUTED_SORT_FIELDS = [
         'total_spent' => 'total_spent_sort',
         'order_count' => 'order_count_sort',
@@ -69,9 +71,11 @@ final readonly class CustomerRepository
     }
 
     /**
+     * @param string $locale the language of the screen: the one the groups are sorted by title in
+     *
      * @return array{rows: ObjectCollection<int, Customer>, total: int, lastPage: int}
      */
-    public function findPaginated(CustomerFilters $filters, int $page, int $perPage): array
+    public function findPaginated(CustomerFilters $filters, int $page, int $perPage, string $locale = 'en_US'): array
     {
         // Read once for the three queries below: the status list is deliberately not memoised.
         $revenueStatuses = $this->orders->revenueStatusIdListSql();
@@ -91,6 +95,11 @@ final readonly class CustomerRepository
                 : self::orderCountSqlExpression('customer.id', $revenueStatuses);
             $rowsQuery->withColumn($expression, $alias);
             $rowsQuery->orderBy($alias, $direction);
+        } elseif ($filters->sort === self::GROUP_SORT) {
+            // The column shows the title of the group: that is what it sorts on.
+            $rowsQuery->withColumn(self::groupTitleSqlExpression($locale), 'group_title_sort');
+            $rowsQuery->orderBy('group_title_sort', $direction);
+            $rowsQuery->orderBy('customer.id', $direction);
         } else {
             $column = self::SORT_FIELDS[$filters->sort] ?? self::SORT_FIELDS[CustomerFilters::DEFAULT_SORT];
             $rowsQuery->orderBy('customer.'.$column, $direction);
@@ -466,6 +475,21 @@ final readonly class CustomerRepository
     {
         return '(SELECT COUNT(*) FROM `order` WHERE `order`.customer_id = '.$customerIdColumn
             .' AND `order`.status_id IN ('.$revenueStatuses.'))';
+    }
+
+    /**
+     * The title a group shows in the list, in the language of the screen, the code in its
+     * place when that language has none: {@see CustomerGroupRepository::titleOf()}. A
+     * correlated sub-query, like the figures above. The locale is a language code, never
+     * a posted text: anything else falls back to the default language.
+     */
+    private static function groupTitleSqlExpression(string $locale): string
+    {
+        $locale = 1 === preg_match('/^[a-z]{2,3}(_[A-Z]{2})?$/', $locale) ? $locale : 'en_US';
+
+        return "(SELECT COALESCE(NULLIF(TRIM(i.title), ''), g.code) FROM customer_group g"
+            ." LEFT JOIN customer_group_i18n i ON i.id = g.id AND i.locale = '".$locale."'"
+            .' WHERE g.id = customer.customer_group_id)';
     }
 
     private static function roundUpToNice(float $value): int

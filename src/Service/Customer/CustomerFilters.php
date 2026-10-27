@@ -36,7 +36,7 @@ final readonly class CustomerFilters
     public const DEFAULT_DIRECTION = 'desc';
     public const ALLOWED_DIRECTIONS = ['asc', 'desc'];
     public const ALLOWED_SORTS = [
-        'lastname', 'firstname', 'email', 'ref', 'created_at', 'total_spent', 'order_count',
+        'lastname', 'firstname', 'email', 'ref', 'created_at', 'total_spent', 'order_count', 'group',
     ];
 
     public const TRISTATE_WITH = 'with';
@@ -51,6 +51,7 @@ final readonly class CustomerFilters
     public const KEY_COUNTRY = 'country_id';
     public const KEY_LANG_IDS = 'lang_ids';
     public const KEY_TITLE_IDS = 'title_ids';
+    public const KEY_GROUP_IDS = 'group_ids';
     public const KEY_TAG_IDS = 'tag_ids';
     public const KEY_PHONE = 'phone';
     public const KEY_SEARCH = 'search';
@@ -66,6 +67,7 @@ final readonly class CustomerFilters
     /**
      * @param list<int> $langIds
      * @param list<int> $titleIds
+     * @param list<int> $groupIds
      */
     public function __construct(
         public ?bool $newsletter = null,
@@ -80,6 +82,7 @@ final readonly class CustomerFilters
         public ?int $countryId = null,
         public array $langIds = [],
         public array $titleIds = [],
+        public array $groupIds = [],
         public array $tagIds = [],
         public string $phone = '',
         public string $search = '',
@@ -156,6 +159,7 @@ final readonly class CustomerFilters
             countryId: self::parsePositiveInt((string) $query->get('country_id', '')),
             langIds: self::parseIntArray($query->all('lang_ids')),
             titleIds: self::parseIntArray($query->all('title_ids')),
+            groupIds: self::parseIntArray($query->all('group_ids')),
             tagIds: self::parseIntArray($query->all('tag_ids')),
             phone: trim((string) $query->get('phone', '')),
             search: trim((string) $query->get('q', '')),
@@ -179,6 +183,7 @@ final readonly class CustomerFilters
             && $this->countryId === null
             && $this->langIds === []
             && $this->titleIds === []
+            && $this->groupIds === []
             && $this->tagIds === []
             && $this->phone === '';
     }
@@ -225,6 +230,9 @@ final readonly class CustomerFilters
         }
         if ($this->titleIds !== []) {
             $params['title_ids'] = $this->titleIds;
+        }
+        if ($this->groupIds !== []) {
+            $params['group_ids'] = $this->groupIds;
         }
         if ($this->tagIds !== []) {
             $params['tag_ids'] = $this->tagIds;
@@ -278,6 +286,7 @@ final readonly class CustomerFilters
             self::KEY_COUNTRY => ['countryId' => null],
             self::KEY_LANG_IDS => ['langIds' => []],
             self::KEY_TITLE_IDS => ['titleIds' => []],
+            self::KEY_GROUP_IDS => ['groupIds' => []],
             self::KEY_TAG_IDS => ['tagIds' => []],
             self::KEY_PHONE => ['phone' => ''],
             self::KEY_SEARCH => ['search' => ''],
@@ -305,6 +314,9 @@ final readonly class CustomerFilters
         }
         if ($this->titleIds !== []) {
             $query->filterByTitleId($this->titleIds, Criteria::IN);
+        }
+        if ($this->groupIds !== []) {
+            $query->filterByCustomerGroupId($this->groupIds, Criteria::IN);
         }
 
         $this->applyNewsletter($query);
@@ -454,6 +466,7 @@ final readonly class CustomerFilters
             countryId: \array_key_exists('countryId', $overrides) ? $overrides['countryId'] : $this->countryId,
             langIds: \array_key_exists('langIds', $overrides) ? $overrides['langIds'] : $this->langIds,
             titleIds: \array_key_exists('titleIds', $overrides) ? $overrides['titleIds'] : $this->titleIds,
+            groupIds: \array_key_exists('groupIds', $overrides) ? $overrides['groupIds'] : $this->groupIds,
             tagIds: \array_key_exists('tagIds', $overrides) ? $overrides['tagIds'] : $this->tagIds,
             phone: \array_key_exists('phone', $overrides) ? $overrides['phone'] : $this->phone,
             search: \array_key_exists('search', $overrides) ? $overrides['search'] : $this->search,

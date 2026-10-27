@@ -26,6 +26,7 @@
          data-bo-sale-product-picker-count-template-value="{{ '%count% product(s) selected'|trans }}"
          data-bo-sale-product-picker-shown-template-value="{{ '%count% shown by the filter'|trans }}"
          data-bo-sale-targeting-reserved-value="{{ constant('Thelia\\Model\\Sale::AUDIENCE_MODE_CUSTOMERS') }}"
+         data-bo-sale-targeting-groups-value="{{ constant('Thelia\\Model\\Sale::AUDIENCE_MODE_CUSTOMER_GROUPS') }}"
          data-bo-sale-targeting-lead-hours-value="{{ constant('Thelia\\Model\\Sale::COUNTDOWN_MODE_LEAD_HOURS') }}">
 
         {% form_theme form with bo_form_themes only %}
@@ -187,7 +188,7 @@
                        currently show: a reserved sale whose last targeted customer was
                        deleted keeps its mode and loses its audience, and that is exactly
                        the state worth flagging. #}
-                    {% set targeted_count = selected_customer_ids|length %}
+                    {% set targeted_count = reserved_for_groups ? selected_customer_group_ids|length : selected_customer_ids|length %}
                     {% set reserved_for_nobody = sale_is_reserved and targeted_count == 0 %}
 
                     <div class="card mb-3" data-testid="sale-targeting-card">
@@ -212,12 +213,12 @@
                                      data-testid="sale-reserved-settings"
                                      class="{{ form.audience_mode.vars.value == constant('Thelia\\Model\\Sale::AUDIENCE_MODE_CUSTOMERS') ? '' : 'd-none' }}">
                                     <label class="form-label" for="sale-customers-select">{{ 'Customers this sale is reserved for'|trans }}</label>
-                                    {% if reserved_for_nobody %}
+                                    {% if reserved_for_nobody and not reserved_for_groups %}
                                         <div class="alert alert-danger py-2" data-testid="sale-reserved-empty" data-reserved-count="0">
                                             <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                                             {{ 'Reserved, but no customer is targeted any more: nobody can see this sale. Select customers again, or make it public.'|trans }}
                                         </div>
-                                    {% else %}
+                                    {% elseif not reserved_for_groups %}
                                         <div class="form-text mb-1" data-testid="sale-customers-count" data-reserved-count="{{ targeted_count }}">
                                             {{ 'Currently targeted: %count% customer(s).'|trans({'%count%': targeted_count}) }}
                                         </div>
@@ -232,7 +233,29 @@
                                         id: 'sale-customers-select',
                                         with_email: can_target_customers,
                                     } only %}
+                                </div>
 
+                                <div data-bo-sale-targeting-target="groupsField"
+                                     data-testid="sale-groups-settings"
+                                     class="{{ form.audience_mode.vars.value == constant('Thelia\\Model\\Sale::AUDIENCE_MODE_CUSTOMER_GROUPS') ? '' : 'd-none' }}">
+                                    <label class="form-label" for="sale-customer-groups-select">{{ 'Customer groups this sale is reserved for'|trans }}</label>
+                                    {% if reserved_for_nobody and reserved_for_groups %}
+                                        <div class="alert alert-danger py-2" data-testid="sale-groups-empty" data-reserved-count="0">
+                                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                            {{ 'Reserved, but no customer group is targeted any more: nobody can see this sale. Select groups again, or make it public.'|trans }}
+                                        </div>
+                                    {% endif %}
+                                    {% include '@BackOfficeDefaultTwig/fragments/customer-group-multiselect.html.twig' with {
+                                        name: 'sale_customer_groups[]',
+                                        choices: customer_group_choices,
+                                        selected: selected_customer_group_ids,
+                                        testid: 'sale-customer-groups',
+                                        id: 'sale-customer-groups-select',
+                                    } only %}
+                                </div>
+
+                                <div data-bo-sale-targeting-target="anyReservedField"
+                                     class="{{ form.audience_mode.vars.value in [constant('Thelia\\Model\\Sale::AUDIENCE_MODE_CUSTOMERS'), constant('Thelia\\Model\\Sale::AUDIENCE_MODE_CUSTOMER_GROUPS')] ? '' : 'd-none' }}">
                                     <div class="form-check form-switch mt-3 mb-0">
                                         {{ form_widget(form.hide_products, { attr: { class: 'form-check-input', 'data-testid': 'sale-hide-products' } }) }}
                                         {{ form_label(form.hide_products, null, { label_attr: { class: 'form-check-label' } }) }}
@@ -246,6 +269,8 @@
                                     <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                                     {% if reserved_for_nobody %}
                                         {{ 'Reserved, but no customer is targeted any more: nobody can see this sale. Putting it right needs the permission to view customers.'|trans }}
+                                    {% elseif reserved_for_groups %}
+                                        {{ 'This sale is reserved for %count% customer group(s). Changing who it is for needs the permission to view customers, so its current targeting is kept as is when you save.'|trans({'%count%': targeted_count}) }}
                                     {% elseif sale_is_reserved %}
                                         {{ 'This sale is reserved for %count% customer(s). Changing who it is for needs the permission to view customers, so its current targeting is kept as is when you save.'|trans({'%count%': targeted_count}) }}
                                     {% else %}

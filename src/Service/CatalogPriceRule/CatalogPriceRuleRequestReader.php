@@ -27,6 +27,7 @@ use Thelia\Model\CatalogPriceRule;
  *   products[]               the named products
  *   effect_value[<currency>] the amount off or fixed price, per currency
  *   rule_customers[]         the customers a reserved rule prices for
+ *   rule_customer_groups[]   the customer groups a rule reserved for groups prices for
  */
 final readonly class CatalogPriceRuleRequestReader
 {
@@ -37,6 +38,8 @@ final readonly class CatalogPriceRuleRequestReader
     public const EFFECT_VALUES_FIELD = 'effect_value';
 
     public const CUSTOMERS_FIELD = 'rule_customers';
+
+    public const CUSTOMER_GROUPS_FIELD = 'rule_customer_groups';
 
     public function __construct(private RequestStack $requestStack)
     {

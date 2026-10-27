@@ -18,6 +18,7 @@ export default class extends Controller {
         'currencyField',
         'audience',
         'reservedField',
+        'groupsField',
         'productCategories',
         'productZone',
         'productEmptyHint',
@@ -31,6 +32,7 @@ export default class extends Controller {
         previewUrl: String,
         percentageType: String,
         reservedMode: String,
+        groupsMode: String,
         countTemplate: String,
         previewFailed: String,
     };
@@ -50,6 +52,9 @@ export default class extends Controller {
         const audience = this.audienceTargets.find((input) => input.checked);
         const reserved = !!audience && audience.value === this.reservedModeValue;
         this.reservedFieldTargets.forEach((el) => el.classList.toggle('d-none', !reserved));
+
+        const forGroups = !!audience && audience.value === this.groupsModeValue;
+        this.groupsFieldTargets.forEach((el) => el.classList.toggle('d-none', !forGroups));
     }
 
     async loadProducts() {

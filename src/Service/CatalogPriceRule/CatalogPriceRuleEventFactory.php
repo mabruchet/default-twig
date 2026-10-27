@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\CatalogPriceRule;
 
+use BackOfficeDefaultTwigBundle\Service\CustomerGroup\PostedCustomerGroupIds;
 use Symfony\Component\HttpFoundation\Request;
 use Thelia\Core\Event\CatalogPriceRule\CatalogPriceRuleCreateEvent;
 use Thelia\Core\Event\CatalogPriceRule\CatalogPriceRuleUpdateEvent;
@@ -27,8 +28,10 @@ use Thelia\Model\CatalogPriceRuleQuery;
  */
 final readonly class CatalogPriceRuleEventFactory
 {
-    public function __construct(private CatalogPriceRuleRequestReader $requestReader)
-    {
+    public function __construct(
+        private CatalogPriceRuleRequestReader $requestReader,
+        private PostedCustomerGroupIds $postedGroupIds,
+    ) {
     }
 
     public function createEvent(array $formData, string $fallbackLocale): CatalogPriceRuleCreateEvent
@@ -89,7 +92,8 @@ final readonly class CatalogPriceRuleEventFactory
             $rule = CatalogPriceRuleQuery::create()->findPk($ruleId);
             $event
                 ->setAudienceMode((int) ($rule?->getAudienceMode() ?? CatalogPriceRule::AUDIENCE_MODE_PUBLIC))
-                ->setCustomerIds(null === $rule ? [] : $this->storedCustomerIds($rule));
+                ->setCustomerIds(null === $rule ? [] : $this->storedCustomerIds($rule))
+                ->setCustomerGroupIds(null === $rule ? [] : $rule->getCustomerGroupIds());
 
             return;
         }
@@ -99,6 +103,11 @@ final readonly class CatalogPriceRuleEventFactory
             ->setAudienceMode($audienceMode)
             ->setCustomerIds(
                 CatalogPriceRule::AUDIENCE_MODE_CUSTOMERS === $audienceMode ? $this->requestReader->customerIdsFromRequest($request) : [],
+            )
+            ->setCustomerGroupIds(
+                CatalogPriceRule::AUDIENCE_MODE_CUSTOMER_GROUPS === $audienceMode
+                    ? $this->postedGroupIds->fromRequest($request, CatalogPriceRuleRequestReader::CUSTOMER_GROUPS_FIELD)
+                    : [],
             );
     }
 
