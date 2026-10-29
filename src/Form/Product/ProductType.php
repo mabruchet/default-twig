@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Form\Product;
 
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductShippingContext;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -24,6 +25,8 @@ use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\GreaterThan;
 use Symfony\Component\Validator\Constraints\NotBlank;
@@ -120,6 +123,11 @@ final class ProductType extends AbstractType
                 $this->addShippingRules($builder);
             }
 
+            // Only on a core that carries the product bundles.
+            if (BundleCore::present()) {
+                $this->addBundleSettings($builder);
+            }
+
             $builder
                 ->add('chapo', TextareaType::class, [
                     'required' => false,
@@ -159,6 +167,62 @@ final class ProductType extends AbstractType
                 'placeholder' => false,
                 'label' => $this->translator->trans('Surcharge applies'),
             ]);
+    }
+
+    /**
+     * The pricing of a bundle is only read when the product is one: a field that is not
+     * submitted is removed from the form rather than disabled, since a disabled field is
+     * still validated.
+     */
+    private function addBundleSettings(FormBuilderInterface $builder): void
+    {
+        $builder
+            ->add('is_bundle', CheckboxType::class, [
+                'required' => false,
+                'label' => $this->translator->trans('Product bundle'),
+            ])
+            ->add('bundle_price_mode', ChoiceType::class, [
+                'choices' => [
+                    $this->translator->trans('Fixed price') => 'fixed',
+                    $this->translator->trans('Sum of the components') => 'computed',
+                ],
+                'placeholder' => false,
+                'label' => $this->translator->trans('Bundle price'),
+            ])
+            ->add('bundle_discount', NumberType::class, [
+                'required' => false,
+                'input' => 'string',
+                'scale' => 2,
+                'html5' => true,
+                'constraints' => [new PositiveOrZero()],
+                'label' => $this->translator->trans('Bundle discount'),
+            ])
+            ->add('bundle_discount_type', ChoiceType::class, [
+                'choices' => [
+                    $this->translator->trans('Percent') => 'percent',
+                    $this->translator->trans('Amount') => 'amount',
+                ],
+                'placeholder' => false,
+                'label' => $this->translator->trans('Discount type'),
+            ]);
+
+        $builder->addEventListener(FormEvents::PRE_SUBMIT, static function (FormEvent $event): void {
+            $submitted = $event->getData();
+            if (\is_array($submitted) && !empty($submitted['is_bundle'])) {
+                return;
+            }
+
+            // The browser posts the hidden fields all the same: they are dropped from what is
+            // submitted as well, or the form would refuse them as extra fields.
+            $form = $event->getForm();
+            $fields = ['bundle_price_mode', 'bundle_discount', 'bundle_discount_type'];
+            foreach ($fields as $field) {
+                $form->remove($field);
+            }
+            if (\is_array($submitted)) {
+                $event->setData(array_diff_key($submitted, array_flip($fields)));
+            }
+        });
     }
 
     public function configureOptions(OptionsResolver $resolver): void

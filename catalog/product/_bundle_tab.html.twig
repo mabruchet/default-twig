@@ -1,0 +1,249 @@
+{# The composition of a product bundle: what it is made of, what that gives, and the pickers that change it. #}
+{% set summary = bundle_summary %}
+{% set can_edit = is_granted('UPDATE', 'admin.product') %}
+<div data-testid="product-bundle-tab">
+    <div class="card shadow-sm border-0 mb-3" data-testid="product-bundle-summary">
+        <div class="card-body">
+            <h2 class="h5 mb-3">{{ 'Bundle summary'|trans }}</h2>
+
+            {% if summary.state == 'empty' %}
+                <div class="alert alert-info" role="status" data-testid="product-bundle-state-empty">{{ 'This bundle has no component yet: add the products it is made of.'|trans }}</div>
+            {% elseif summary.state == 'component_unavailable' %}
+                <div class="alert alert-danger" role="alert" data-testid="product-bundle-state-component-unavailable">
+                    <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>
+                    {{ 'A required component is offline or deleted: this bundle cannot be sold.'|trans }}
+                </div>
+            {% elseif summary.state == 'out_of_stock' %}
+                <div class="alert alert-warning" role="alert" data-testid="product-bundle-state-out-of-stock">
+                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                    {{ 'A component is out of stock: this bundle cannot be ordered for now.'|trans }}
+                </div>
+            {% else %}
+                <div class="alert alert-success" role="status" data-testid="product-bundle-state-sellable">
+                    <i class="bi bi-check-circle" aria-hidden="true"></i>
+                    {{ 'This bundle can be sold.'|trans }}
+                </div>
+            {% endif %}
+
+            <dl class="row mb-0">
+                {% if summary.computed %}
+                    <dt class="col-sm-4">{{ 'Sum of the components'|trans }}</dt>
+                    <dd class="col-sm-8" data-testid="product-bundle-full-price">
+                        {% if summary.has_discount %}<del class="text-muted">{{ summary.full_price }}</del>{% else %}{{ summary.full_price }}{% endif %}
+                        <small class="text-muted">{{ 'excl. tax, with the default composition'|trans }}</small>
+                    </dd>
+                {% endif %}
+                <dt class="col-sm-4">{{ 'Bundle price'|trans }}</dt>
+                <dd class="col-sm-8" data-testid="product-bundle-price">
+                    {{ summary.price ?? '-' }}
+                    <small class="text-muted">{{ summary.computed ? 'excl. tax, with the default composition'|trans : 'fixed price, excl. tax'|trans }}</small>
+                </dd>
+                {% if summary.has_discount %}
+                    <dt class="col-sm-4">{{ 'Discount applied'|trans }}</dt>
+                    <dd class="col-sm-8" data-testid="product-bundle-discount">
+                        {% if summary.discount_percent is not null %}{{ summary.discount_percent }} %{% else %}{{ summary.discount_amount }}{% endif %}
+                    </dd>
+                {% endif %}
+                <dt class="col-sm-4">{{ 'Availability'|trans }}</dt>
+                <dd class="col-sm-8" data-testid="product-bundle-availability">
+                    {% if summary.availability is null %}{{ 'Unlimited'|trans }}{% else %}{{ summary.availability }}{% endif %}
+                    <small class="text-muted">{{ 'bundles can be ordered, deduced from the stock of the components'|trans }}</small>
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    {% if can_edit %}
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body"
+             data-controller="bo-bundle-component-picker"
+             data-bo-bundle-component-picker-products-url-value="{{ bundle_urls.products }}"
+             data-bo-bundle-component-picker-combinations-url-value="{{ bundle_urls.combinations }}">
+            <h2 class="h5 mb-1">{{ 'Add a component'|trans }}</h2>
+            <p class="text-muted">{{ 'Pick a category, a product, then the combination the bundle is made of. A bundle cannot be a component of another bundle.'|trans }}</p>
+
+            <form method="post" action="{{ bundle_urls.add }}" data-testid="product-bundle-add-form">
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+                <input type="hidden" name="_token" value="{{ bundle_token }}">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-4">
+                        <label for="product-bundle-category" class="form-label">{{ 'Category'|trans }}</label>
+                        <select id="product-bundle-category" class="form-select"
+                                data-bo-bundle-component-picker-target="category"
+                                data-action="change->bo-bundle-component-picker#categoryChanged"
+                                data-testid="product-bundle-category">
+                            <option value="">{{ 'Select a category...'|trans }}</option>
+                            {% for category in available_categories %}
+                                <option value="{{ category.id }}">{% if category.depth > 0 %}{% for i in 1..category.depth %}&nbsp;&nbsp;&nbsp;{% endfor %}{% endif %}{{ category.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-none" data-bo-bundle-component-picker-target="productGroup">
+                        <label for="product-bundle-product" class="form-label">{{ 'Product'|trans }}</label>
+                        <select id="product-bundle-product" class="form-select"
+                                data-bo-bundle-component-picker-target="product"
+                                data-action="change->bo-bundle-component-picker#productChanged"
+                                data-testid="product-bundle-product">
+                            <option value="">{{ 'Select a product...'|trans }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-none" data-bo-bundle-component-picker-target="combinationGroup">
+                        <label for="product-bundle-combination" class="form-label">{{ 'Combination'|trans }}</label>
+                        <select id="product-bundle-combination" name="product_sale_elements_id" class="form-select" required
+                                data-bo-bundle-component-picker-target="combination"
+                                data-testid="product-bundle-combination">
+                            <option value="">{{ 'Select a combination...'|trans }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div data-bo-bundle-component-picker-target="empty" class="alert alert-info d-none">{{ 'Nothing to offer here: no product, or every combination is already a component.'|trans }}</div>
+                <div data-bo-bundle-component-picker-target="error" class="alert alert-danger d-none" role="alert">{{ 'The list could not be loaded. Reload the page and try again.'|trans }}</div>
+                <div class="row g-2 align-items-end">
+                    <div class="col-6 col-md-2">
+                        <label for="product-bundle-quantity" class="form-label">{{ 'Quantity'|trans }}</label>
+                        <input type="number" id="product-bundle-quantity" name="quantity" class="form-control" value="1" min="0.000001" step="any" required data-testid="product-bundle-quantity">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label for="product-bundle-min" class="form-label">{{ 'Minimum'|trans }}</label>
+                        <input type="number" id="product-bundle-min" name="min_quantity" class="form-control" min="0" step="any" data-testid="product-bundle-min">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label for="product-bundle-max" class="form-label">{{ 'Maximum'|trans }}</label>
+                        <input type="number" id="product-bundle-max" name="max_quantity" class="form-control" min="0" step="any" data-testid="product-bundle-max">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="form-check mb-2">
+                            <input type="hidden" name="required" value="0">
+                            <input type="checkbox" id="product-bundle-required" name="required" value="1" class="form-check-input" checked data-testid="product-bundle-required">
+                            <label for="product-bundle-required" class="form-check-label">{{ 'Required'|trans }}</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary" data-testid="product-bundle-add">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add'|trans }}
+                        </button>
+                    </div>
+                </div>
+                <small class="form-text text-muted">{{ 'The minimum and the maximum bound the quantity a customer may choose. A required component is always part of the bundle.'|trans }}</small>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+            <h2 class="h5 mb-3">{{ 'Components'|trans }}</h2>
+
+            {% set bundle_rows = [] %}
+            {% for item in bundle_items %}
+                {% set label = item.deleted ? '<span class="text-danger fw-semibold" data-testid="product-bundle-deleted"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> ' ~ 'Deleted component'|trans|e ~ '</span>' : '<a href="' ~ item.product_url|e('html_attr') ~ '">' ~ item.product_title|e ~ '</a>' ~ (item.sellable ? '' : ' <span class="badge text-bg-warning">' ~ 'Offline'|trans|e ~ '</span>') %}
+                {% set bundle_rows = bundle_rows|merge([{
+                    'id': item.id,
+                    '_row_class': item.deleted ? 'table-warning' : '',
+                    'product_html': label,
+                    'combination': item.combination,
+                    'quantity': item.quantity,
+                    'min_quantity': item.min_quantity is same as('') ? '-' : item.min_quantity,
+                    'max_quantity': item.max_quantity is same as('') ? '-' : item.max_quantity,
+                    'required_html': item.required ? '<span class="badge text-bg-primary">' ~ 'Required'|trans|e ~ '</span>' : '<span class="badge text-bg-secondary">' ~ 'Optional'|trans|e ~ '</span>',
+                    'position_html': '<span class="bo-position" data-position="' ~ item.position ~ '">' ~ item.position ~ '</span>',
+                    '_actions': [
+                        row_action('edit', 'Edit this component'|trans, null, '#product-bundle-edit', 'UPDATE', 'admin.product', {
+                            'item-id': item.id,
+                            'label': item.deleted ? 'Deleted component'|trans : item.product_title,
+                            'combination': item.combination,
+                            'quantity': item.quantity,
+                            'min-quantity': item.min_quantity,
+                            'max-quantity': item.max_quantity,
+                            'required': item.required ? '1' : '0',
+                        }),
+                        row_action('delete', 'Remove this component'|trans, null, '#product-bundle-delete', 'UPDATE', 'admin.product', { 'item-id': item.id }),
+                    ],
+                }]) %}
+            {% endfor %}
+
+            {{ component('BoDataTable', {
+                id: 'product-bundle-items',
+                columns: [
+                    column_html('product_html', 'Product'|trans),
+                    column('combination', 'Combination'|trans, hideBelow: 'md'),
+                    column('quantity', 'Quantity'|trans, 'center', leftToRight: true),
+                    column('min_quantity', 'Minimum'|trans, 'center', hideBelow: 'lg', leftToRight: true),
+                    column('max_quantity', 'Maximum'|trans, 'center', hideBelow: 'lg', leftToRight: true),
+                    column_html('required_html', 'Required'|trans, 'center'),
+                    column_html('position_html', 'Position'|trans, 'center', hideBelow: 'lg'),
+                    column_actions(),
+                ],
+                rows: bundle_rows,
+                emptyMessage: 'This bundle has no component yet.'|trans,
+                tbodyAttributes: can_edit ? {
+                    'data-controller': 'bo-sortable',
+                    'data-bo-sortable-url-value': bundle_urls.position,
+                    'data-bo-sortable-token-value': bundle_token,
+                    'data-bo-sortable-param-name-value': 'item_id',
+                } : {},
+            }) }}
+        </div>
+    </div>
+
+    {% if can_edit %}
+    <div class="modal fade" id="product-bundle-edit" tabindex="-1" aria-labelledby="product-bundle-edit-title" aria-hidden="true"
+         data-controller="bo-bundle-item-edit">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{{ bundle_urls.update }}" data-testid="product-bundle-edit-form">
+                    <input type="hidden" name="_token" value="{{ bundle_token }}">
+                    <input type="hidden" name="item_id" value="" data-bo-bundle-item-edit-target="itemId">
+                    <div class="modal-header">
+                        <h2 class="modal-title h5" id="product-bundle-edit-title">{{ 'Edit this component'|trans }} <small class="text-muted" data-bo-bundle-item-edit-target="label"></small></h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="product-bundle-edit-combination" class="form-label">{{ 'Combination'|trans }}</label>
+                            <input type="text" id="product-bundle-edit-combination" class="form-control-plaintext" readonly tabindex="-1" data-bo-bundle-item-edit-target="combination" data-testid="product-bundle-edit-combination">
+                            <small class="form-text text-muted">{{ 'The combination of a component cannot be changed: remove the component and add the other one.'|trans }}</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="product-bundle-edit-quantity" class="form-label">{{ 'Quantity'|trans }}</label>
+                            <input type="number" id="product-bundle-edit-quantity" name="quantity" class="form-control" min="0.000001" step="any" required data-bo-bundle-item-edit-target="quantity" data-testid="product-bundle-edit-quantity">
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label for="product-bundle-edit-min" class="form-label">{{ 'Minimum'|trans }}</label>
+                                <input type="number" id="product-bundle-edit-min" name="min_quantity" class="form-control" min="0" step="any" data-bo-bundle-item-edit-target="min" data-testid="product-bundle-edit-min">
+                            </div>
+                            <div class="col-6">
+                                <label for="product-bundle-edit-max" class="form-label">{{ 'Maximum'|trans }}</label>
+                                <input type="number" id="product-bundle-edit-max" name="max_quantity" class="form-control" min="0" step="any" data-bo-bundle-item-edit-target="max" data-testid="product-bundle-edit-max">
+                            </div>
+                        </div>
+                        <div class="form-check">
+                            <input type="hidden" name="required" value="0">
+                            <input type="checkbox" id="product-bundle-edit-required" name="required" value="1" class="form-check-input" data-bo-bundle-item-edit-target="required" data-testid="product-bundle-edit-required">
+                            <label for="product-bundle-edit-required" class="form-check-label">{{ 'Required'|trans }}</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'Cancel'|trans }}</button>
+                        <button type="submit" class="btn btn-primary" data-testid="product-bundle-edit-submit">
+                            <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% component 'BoConfirmDialog' with {
+        id: 'product-bundle-delete',
+        title: 'Remove this component',
+        formAction: bundle_urls.delete,
+        message: 'Do you really want to remove this component from the bundle?',
+        confirmLabel: 'Remove',
+        testid: 'product-bundle-delete',
+        prefillTrigger: 'data-item-id',
+        prefillInput: 'item_id',
+    } %}{% endcomponent %}
+    {% endif %}
+</div>

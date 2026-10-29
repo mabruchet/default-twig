@@ -21,7 +21,9 @@
 
     {% set extra_tabs = hook_block('product.tab', { product: product.id, id: product.id }) %}
     {# A module tab opens like a native one when current_tab names it; an unknown tab falls back to the general one. #}
-    {% set current_tab = current_tab in ['general', 'attributes', 'pse', 'related', 'images', 'documents', 'seo', 'modules']|merge(extra_tabs|map(block => block.id)) ? current_tab : 'general' %}
+    {% set bundle_is = bundle_is|default(false) %}
+    {% set current_tab = current_tab == 'bundle' and not bundle_is ? 'general' : current_tab %}
+    {% set current_tab = current_tab in ['general', 'attributes', 'pse', 'bundle', 'related', 'images', 'documents', 'seo', 'modules']|merge(extra_tabs|map(block => block.id)) ? current_tab : 'general' %}
 
     <div class="container-fluid" data-testid="product-edit-page"
          data-controller="bo-unsaved-changes"
@@ -64,6 +66,11 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link {% if current_tab == 'pse' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-pse" type="button" data-testid="product-tab-pse">{{ 'Combinations'|trans }}</button>
             </li>
+            {% if bundle_is %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if current_tab == 'bundle' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-bundle" type="button" data-testid="product-tab-bundle">{{ 'Composition'|trans }}</button>
+            </li>
+            {% endif %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link {% if current_tab == 'related' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-related" type="button" data-testid="product-tab-related">{{ 'Related'|trans }}</button>
             </li>
@@ -143,6 +150,37 @@
                                 {{ form_widget(form.guest_checkout_forbidden, { attr: { class: 'form-check-input', 'data-testid': 'product-edit-guest-checkout-forbidden' } }) }}
                                 {{ form_label(form.guest_checkout_forbidden, null, { label_attr: { class: 'form-check-label' } }) }}
                             </div>
+                            {# Only on a core that carries the product bundles. #}
+                            {% if form.is_bundle is defined %}
+                            <div class="card mb-3" data-testid="product-edit-bundle" data-controller="bo-bundle-settings">
+                                <div class="card-body">
+                                    <h2 class="h6 card-title">{{ 'Bundle'|trans }}</h2>
+                                    <div class="form-check mb-3">
+                                        {{ form_widget(form.is_bundle, { attr: { class: 'form-check-input', 'data-testid': 'product-edit-is-bundle', 'data-bo-bundle-settings-target': 'trigger', 'data-action': 'change->bo-bundle-settings#update' } }) }}
+                                        {{ form_label(form.is_bundle, null, { label_attr: { class: 'form-check-label' } }) }}
+                                    </div>
+                                    <div class="d-none" data-bo-bundle-settings-target="field">
+                                        <div class="mb-3">
+                                            {{ form_label(form.bundle_price_mode) }}
+                                            {{ form_widget(form.bundle_price_mode, { attr: { class: 'form-select', 'data-testid': 'product-edit-bundle-price-mode', 'data-bo-bundle-settings-target': 'mode', 'data-action': 'change->bo-bundle-settings#update' } }) }}
+                                            <small class="form-text text-muted">{{ 'A fixed price is the one of the combination of this product; the other mode adds up the components.'|trans }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="d-none" data-bo-bundle-settings-target="discount">
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                {{ form_label(form.bundle_discount) }}
+                                                {{ form_widget(form.bundle_discount, { attr: { class: 'form-control', min: 0, step: 'any', 'data-testid': 'product-edit-bundle-discount' } }) }}
+                                            </div>
+                                            <div class="col-6">
+                                                {{ form_label(form.bundle_discount_type) }}
+                                                {{ form_widget(form.bundle_discount_type, { attr: { class: 'form-select', 'data-testid': 'product-edit-bundle-discount-type' } }) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                             {# Only on a core that carries the shipping rules of a product. #}
                             {% if form.free_shipping is defined %}
                             <div class="card mb-3" data-testid="product-edit-shipping" data-controller="bo-free-shipping">
@@ -385,8 +423,20 @@
             </div>
 
             <div class="tab-pane fade {% if current_tab == 'pse' %}show active{% endif %}" id="tab-pse" role="tabpanel">
+                {% if bundle_is %}
+                    <div class="alert alert-warning" role="alert" data-testid="product-bundle-stock-ignored">
+                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                        {{ 'This product is a bundle: the stock of its combination is ignored. What can be ordered follows the stock of the components.'|trans }}
+                    </div>
+                {% endif %}
                 {{ render(controller('BackOfficeDefaultTwigBundle\\Controller\\Catalog\\ProductAdvancedController::combinationsTab', { product_id: product.id, currency_id: app.request.query.get('combinations_currency_id') })) }}
             </div>
+
+            {% if bundle_is %}
+            <div class="tab-pane fade {% if current_tab == 'bundle' %}show active{% endif %}" id="tab-bundle" role="tabpanel">
+                {% include '@BackOfficeDefaultTwig/catalog/product/_bundle_tab.html.twig' %}
+            </div>
+            {% endif %}
 
             <div class="tab-pane fade {% if current_tab == 'related' %}show active{% endif %}" id="tab-related" role="tabpanel">
                 {% include '@BackOfficeDefaultTwig/catalog/product/_related_tab.html.twig' %}

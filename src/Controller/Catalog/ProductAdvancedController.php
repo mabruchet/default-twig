@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Controller\Catalog;
 
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use BackOfficeDefaultTwigBundle\Service\File\ProductVideoPresenter;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationIdentifierNotices;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationsTabContextBuilder;
@@ -141,25 +142,35 @@ final class ProductAdvancedController
     }
 
     #[Route('/admin/product/{productId}/available-accessories/{categoryId}.{_format}', name: 'admin.product.accessories-content', methods: ['GET'], requirements: ['productId' => '\d+', 'categoryId' => '\d+'])]
-    public function availableAccessories(int $productId, int $categoryId, string $_format): Response
+    public function availableAccessories(int $productId, int $categoryId, string $_format, Request $request): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::VIEW)) {
             return $denied;
         }
 
         $locale = $this->defaultLocale();
-        $alreadyAssigned = AccessoryQuery::create()
-            ->select('accessory')
-            ->findByProductId($productId)
-            ->toArray();
-        $excluded = array_merge([$productId], array_map('intval', $alreadyAssigned));
-
+        $isBundlePicker = $request->query->getBoolean('bundle_component') && BundleCore::present();
+        if ($isBundlePicker) {
+            // The same language as the table of the components and the combinations of the picker.
+            $locale = $request->getLocale();
+        }
         $query = ProductQuery::create()
             ->useProductCategoryQuery()
             ->filterByCategoryId($categoryId)
             ->endUse()
-            ->filterById($excluded, Criteria::NOT_IN)
             ->orderByPosition();
+
+        if ($isBundlePicker) {
+            // The products a bundle may be made of: any product but a bundle, and not the
+            // bundle itself. The accessories of the product do not come into it.
+            $query->filterById($productId, Criteria::NOT_EQUAL)->filterByIsBundle(0);
+        } else {
+            $alreadyAssigned = AccessoryQuery::create()
+                ->select('accessory')
+                ->findByProductId($productId)
+                ->toArray();
+            $query->filterById(array_merge([$productId], array_map('intval', $alreadyAssigned)), Criteria::NOT_IN);
+        }
 
         $items = [];
         foreach ($query->find() as $product) {

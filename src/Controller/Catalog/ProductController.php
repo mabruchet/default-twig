@@ -21,6 +21,8 @@ use BackOfficeDefaultTwigBundle\Repository\CategoryRepository;
 use BackOfficeDefaultTwigBundle\Repository\ProductRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
+use BackOfficeDefaultTwigBundle\Service\Bundle\ProductBundleContext;
 use BackOfficeDefaultTwigBundle\Service\Catalog\CategoryListPresenter;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductDestinationRestrictionContext;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductFilterPresenter;
@@ -53,6 +55,8 @@ use Thelia\Core\Event\UpdatePositionEvent;
 use Thelia\Core\Event\UpdateSeoEvent;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\Catalog\Bundle\BundleDiscountType;
+use Thelia\Domain\Catalog\Bundle\BundlePriceMode;
 use Thelia\Domain\Shipping\ProductRule\ShippingSurchargeMode;
 use Thelia\Model\BrandQuery;
 use Thelia\Model\CategoryQuery;
@@ -104,6 +108,7 @@ final class ProductController
         private readonly ProductFilterPresenter $filterPresenter,
         private readonly ProductPricingProvider $pricing,
         private readonly ProductPricingPresenter $pricingPresenter,
+        private readonly ProductBundleContext $bundle,
     ) {
     }
 
@@ -275,6 +280,7 @@ final class ProductController
             $this->relations->build($product, $locale, $uiLocale),
             $this->shipping->build($product, $uiLocale),
             $this->destinationRestrictions->build($product, $uiLocale),
+            $this->bundle->build($product, $uiLocale),
         )));
     }
 
@@ -287,6 +293,13 @@ final class ProductController
 
         $productId = (int) $request->request->get('product_id', 0);
         $closeAfterSave = $request->request->get('save_mode') === 'close';
+
+        // A bundle is a global piece of the catalogue: a restricted administrator saves the rest
+        // of the sheet, not the bundle settings, which set the public price of the pack.
+        if ($this->restricted->isRestricted() && $this->bundleSettingsChanged($request, $productId)
+            && ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE))) {
+            return $denied;
+        }
 
         return $this->action->submit(
             resource: self::RESOURCE,
@@ -441,6 +454,14 @@ final class ProductController
             'shipping_surcharge_mode' => (int) $product->getShippingSurchargeMode(),
         ] : [];
 
+        // The bundle settings exist only on a core that carries the product bundles.
+        $bundleSettings = BundleCore::present() ? [
+            'is_bundle' => (bool) $product->getIsBundle(),
+            'bundle_price_mode' => $product->getBundlePriceMode() ?: BundlePriceMode::Fixed->value,
+            'bundle_discount' => $this->plainDecimal((string) $product->getBundleDiscount()),
+            'bundle_discount_type' => $product->getBundleDiscountType() ?: BundleDiscountType::Percent->value,
+        ] : [];
+
         return $this->formFactory->createNamed('thelia_product_modification', ProductType::class, [
             'id' => $product->getId(),
             'locale' => $locale,
@@ -456,7 +477,7 @@ final class ProductController
             'brand_id' => $product->getBrandId(),
             'virtual_document_id' => $this->currentVirtualDocumentId($product),
             'guest_checkout_forbidden' => (bool) $product->getGuestCheckoutForbidden(),
-        ] + $shippingRules, [
+        ] + $shippingRules + $bundleSettings, [
             'include_id' => true,
         ]);
     }
@@ -528,7 +549,73 @@ final class ProductController
                 ->setShippingSurchargeMode($freeShipping ? null : (ShippingSurchargeMode::tryFrom((int) ($data['shipping_surcharge_mode'] ?? 0)) ?? ShippingSurchargeMode::PerLine));
         }
 
+        if ($validated->has('is_bundle') && !$this->restricted->isRestricted()) {
+            $this->applyBundleSettings($event, $data);
+        }
+
         return $event;
+    }
+
+    /**
+     * The pricing fields come with the form only for a bundle: for any other product they are
+     * left unset, which the core reads as "keep what is stored".
+     *
+     * @param array<string, mixed> $data
+     */
+    private function applyBundleSettings(ProductUpdateEvent $event, array $data): void
+    {
+        $isBundle = (bool) ($data['is_bundle'] ?? false);
+        $event->setIsBundle($isBundle);
+
+        if (!$isBundle) {
+            return;
+        }
+
+        $event
+            ->setBundlePriceMode(BundlePriceMode::tryFrom((string) ($data['bundle_price_mode'] ?? '')))
+            ->setBundleDiscountType(BundleDiscountType::tryFrom((string) ($data['bundle_discount_type'] ?? '')));
+
+        // An emptied discount field means no discount; a field that was not sent leaves it as it is.
+        if (\array_key_exists('bundle_discount', $data)) {
+            $event->setBundleDiscount(null === $data['bundle_discount'] || '' === $data['bundle_discount'] ? '0' : (string) $data['bundle_discount']);
+        }
+    }
+
+    /**
+     * Whether the bundle fields posted with the sheet differ from what is stored.
+     */
+    private function bundleSettingsChanged(Request $request, int $productId): bool
+    {
+        $posted = $request->request->all('thelia_product_modification');
+        $product = ProductQuery::create()->findPk($productId);
+        if (!BundleCore::present() || null === $product || !\array_key_exists('is_bundle', $posted) && !\array_key_exists('bundle_price_mode', $posted)) {
+            return false;
+        }
+
+        $isBundle = !empty($posted['is_bundle']);
+        if ($isBundle !== (bool) $product->getIsBundle()) {
+            return true;
+        }
+
+        if (!$isBundle) {
+            return false;
+        }
+
+        return (string) ($posted['bundle_price_mode'] ?? '') !== (string) ($product->getBundlePriceMode() ?: BundlePriceMode::Fixed->value)
+            || (string) ($posted['bundle_discount_type'] ?? '') !== (string) ($product->getBundleDiscountType() ?: BundleDiscountType::Percent->value)
+            || (float) str_replace(',', '.', (string) ($posted['bundle_discount'] ?? '0')) !== (float) $product->getBundleDiscount();
+    }
+
+    /**
+     * "10.500000" as "10.5", and nothing stored as "0": what a number field takes as its value.
+     */
+    private function plainDecimal(string $stored): string
+    {
+        if (!is_numeric($stored)) {
+            return '0';
+        }
+
+        return str_contains($stored, '.') ? rtrim(rtrim($stored, '0'), '.') ?: '0' : $stored;
     }
 
     private function seoEvent(FormInterface $validated): UpdateSeoEvent
@@ -654,6 +741,13 @@ final class ProductController
 
         $editUrl = $this->urls->generate(self::EDIT_ROUTE, ['product_id' => $id]);
 
+        // The sale element of a bundle holds no stock of its own: the stock of a bundle is
+        // what its components allow, which the list does not compute row by row.
+        $isBundle = BundleCore::present() && (bool) $product->getIsBundle();
+        $bundleBadge = $isBundle
+            ? \sprintf(' <span class="badge text-bg-info ms-1" data-testid="bo-product-bundle-badge">%s</span>', htmlspecialchars($this->translator->trans('Bundle')))
+            : '';
+
         return [
             'id' => $id,
             'thumbnail_html' => $this->thumbnails->forProduct($id),
@@ -668,10 +762,12 @@ final class ProductController
                 '<a href="%s" class="text-decoration-none fw-semibold" data-testid="bo-product-title-link">%s</a>',
                 htmlspecialchars($editUrl),
                 htmlspecialchars((string) $product->getTitle()),
-            ),
+            ).$bundleBadge,
             'price_html' => $this->pricingPresenter->price($pricing, $uiLocale),
             'promo_price_html' => $this->pricingPresenter->promoPrice($pricing, $uiLocale),
-            'stock_html' => $this->pricingPresenter->stock($pricing),
+            'stock_html' => $isBundle
+                ? \sprintf('<span class="text-muted" title="%s" data-testid="bo-product-bundle-stock">-</span>', htmlspecialchars($this->translator->trans('The stock of a bundle is the one of its components')))
+                : $this->pricingPresenter->stock($pricing),
             'visible' => (bool) $product->getVisible(),
             'position' => (int) $product->getPosition(),
             'toggle_visible_url' => $this->urls->generate(
