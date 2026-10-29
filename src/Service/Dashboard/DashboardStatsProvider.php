@@ -22,6 +22,8 @@ use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
 use BackOfficeDefaultTwigBundle\Repository\ProductRepository;
 use BackOfficeDefaultTwigBundle\Repository\PublicationRepository;
+use BackOfficeDefaultTwigBundle\Service\Bundle\UnsellableBundleCounter;
+use BackOfficeDefaultTwigBundle\Service\Catalog\ProductFilters;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\Service\Listing\FolderListQuery;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
@@ -83,6 +85,7 @@ final readonly class DashboardStatsProvider
         private PublicationRepository $publications,
         private ContentPublicationSupport $publicationSupport,
         private ClockInterface $clock,
+        private UnsellableBundleCounter $unsellableBundles,
     ) {
     }
 
@@ -171,6 +174,9 @@ final readonly class DashboardStatsProvider
             showRecentOrders: $canViewOrders,
             showTopProducts: $canViewOrders,
             showLowStock: $canViewProducts,
+            unsellableBundles: $canViewProducts ? $this->unsellableBundles->count() : 0,
+            // The list of the bundles, online: the ones that cannot be ordered are among them.
+            unsellableBundlesUrl: $this->urls->generate('admin.products.default', ['bundle' => ProductFilters::TRISTATE_WITH, 'visible' => ProductFilters::TRISTATE_WITH]),
         );
     }
 

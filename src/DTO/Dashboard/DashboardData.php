@@ -49,6 +49,8 @@ final readonly class DashboardData
         public bool $showRecentOrders = true,
         public bool $showTopProducts = true,
         public bool $showLowStock = true,
+        public int $unsellableBundles = 0,
+        public string $unsellableBundlesUrl = '',
     ) {
     }
 }

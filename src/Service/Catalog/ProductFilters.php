@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Catalog;
 
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\Request;
 use Thelia\Domain\Catalog\Product\Identifier\Gtin;
@@ -45,6 +46,7 @@ final readonly class ProductFilters
     public const KEY_VISIBLE = 'visible';
     public const KEY_PROMO = 'promo';
     public const KEY_NEW = 'new';
+    public const KEY_BUNDLE = 'bundle';
     public const KEY_QUANTITY = 'quantity';
     public const KEY_PRICE = 'price';
     public const KEY_FEATURES = 'feature_ids';
@@ -62,6 +64,7 @@ final readonly class ProductFilters
         public ?bool $visible = null,
         public ?bool $promo = null,
         public ?bool $new = null,
+        public ?bool $bundle = null,
         public ?float $minQuantity = null,
         public ?float $maxQuantity = null,
         public ?float $minPrice = null,
@@ -107,6 +110,8 @@ final readonly class ProductFilters
             visible: self::parseTriStateBool((string) $query->get('visible', '')),
             promo: self::parseTriStateBool((string) $query->get('promo', '')),
             new: self::parseTriStateBool((string) $query->get('new', '')),
+            // Only a core that carries the product bundles has them to filter on.
+            bundle: BundleCore::present() ? self::parseTriStateBool((string) $query->get('bundle', '')) : null,
             minQuantity: $minQuantity,
             maxQuantity: $maxQuantity,
             minPrice: $minPrice,
@@ -127,6 +132,7 @@ final readonly class ProductFilters
             && $this->visible === null
             && $this->promo === null
             && $this->new === null
+            && $this->bundle === null
             && $this->minQuantity === null
             && $this->maxQuantity === null
             && $this->minPrice === null
@@ -163,7 +169,7 @@ final readonly class ProductFilters
         if ($this->templateId !== null) {
             $params['template_id'] = $this->templateId;
         }
-        foreach (['visible' => $this->visible, 'promo' => $this->promo, 'new' => $this->new] as $key => $value) {
+        foreach (['visible' => $this->visible, 'promo' => $this->promo, 'new' => $this->new, 'bundle' => $this->bundle] as $key => $value) {
             if ($value !== null) {
                 $params[$key] = $value ? self::TRISTATE_WITH : self::TRISTATE_WITHOUT;
             }
@@ -206,6 +212,7 @@ final readonly class ProductFilters
             self::KEY_VISIBLE => ['visible' => null],
             self::KEY_PROMO => ['promo' => null],
             self::KEY_NEW => ['new' => null],
+            self::KEY_BUNDLE => ['bundle' => null],
             self::KEY_QUANTITY => ['minQuantity' => null, 'maxQuantity' => null],
             self::KEY_PRICE => ['minPrice' => null, 'maxPrice' => null],
             self::KEY_FEATURES => ['featureIds' => []],
@@ -234,12 +241,22 @@ final readonly class ProductFilters
         $this->applySearch($query, $locale);
         $this->applySaleElementFlag($query, 'promo', $this->promo);
         $this->applySaleElementFlag($query, 'newness', $this->new);
+        $this->applyBundle($query);
         $this->applyQuantityRange($query);
         $this->applyPriceRange($query);
         $this->applyFeatures($query);
         $this->applyAttributes($query);
 
         return $query;
+    }
+
+    private function applyBundle(ProductQuery $query): void
+    {
+        if (null === $this->bundle) {
+            return;
+        }
+
+        $query->filterByIsBundle($this->bundle ? 1 : 0);
     }
 
     private function applySearch(ProductQuery $query, string $locale): void
@@ -396,6 +413,7 @@ final readonly class ProductFilters
             visible: \array_key_exists('visible', $overrides) ? $overrides['visible'] : $this->visible,
             promo: \array_key_exists('promo', $overrides) ? $overrides['promo'] : $this->promo,
             new: \array_key_exists('new', $overrides) ? $overrides['new'] : $this->new,
+            bundle: \array_key_exists('bundle', $overrides) ? $overrides['bundle'] : $this->bundle,
             minQuantity: \array_key_exists('minQuantity', $overrides) ? $overrides['minQuantity'] : $this->minQuantity,
             maxQuantity: \array_key_exists('maxQuantity', $overrides) ? $overrides['maxQuantity'] : $this->maxQuantity,
             minPrice: \array_key_exists('minPrice', $overrides) ? $overrides['minPrice'] : $this->minPrice,

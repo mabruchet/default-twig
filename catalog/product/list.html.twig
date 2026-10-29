@@ -124,6 +124,18 @@
                                     </select>
                                 </fieldset>
                             </div>
+                            {% if filters.bundles_available %}
+                            <div class="col">
+                                <fieldset>
+                                    <legend class="form-label">{{ 'Bundle'|trans }}</legend>
+                                    <select name="bundle" class="form-select form-select-sm" data-testid="product-filter-bundle">
+                                        {% for option in filters.tristate_options %}
+                                            <option value="{{ option.value }}" {{ option.value == filters.bundle_value ? 'selected' : '' }}>{{ option.label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </fieldset>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
 

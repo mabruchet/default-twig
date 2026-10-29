@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Repository;
 
 use BackOfficeDefaultTwigBundle\DTO\Dashboard\DateRange;
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
 use Propel\Runtime\Propel;
@@ -143,19 +144,25 @@ final readonly class ProductRepository
      */
     public function findLowStock(int $threshold, int $limit, string $locale): array
     {
-        /** @var ObjectCollection<int, ProductSaleElements> $collection */
-        $collection = ProductSaleElementsQuery::create()
+        $query = ProductSaleElementsQuery::create()
             ->filterByQuantity($threshold, Criteria::LESS_EQUAL)
             ->orderByQuantity(Criteria::ASC)
             // Several combinations sitting on the same quantity is the normal case;
             // without a tie-break the shop sees a different list on every refresh.
             ->orderById(Criteria::ASC)
             ->limit($limit)
-            ->joinWithProduct()
-            ->useProductQuery()
-                ->joinWithI18n($locale, Criteria::LEFT_JOIN)
-            ->endUse()
-            ->find();
+            ->joinWithProduct();
+
+        $products = $query->useProductQuery()->joinWithI18n($locale, Criteria::LEFT_JOIN);
+        // The combination of a bundle holds no stock of its own: what a bundle lacks is
+        // told by the components, and by the line of the bundles that cannot be ordered.
+        if (BundleCore::present()) {
+            $products->filterByIsBundle(0);
+        }
+        $products->endUse();
+
+        /** @var ObjectCollection<int, ProductSaleElements> $collection */
+        $collection = $query->find();
 
         $list = array_values(iterator_to_array($collection));
 

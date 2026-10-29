@@ -184,8 +184,16 @@
                     <span class="badge text-bg-danger">{{ pse.quantity }}</span>
                 </li>
             {% else %}
-                <li class="list-group-item text-muted text-center">{{ 'All products in stock'|trans }}</li>
+                {% if data.unsellableBundles == 0 %}
+                    <li class="list-group-item text-muted text-center">{{ 'All products in stock'|trans }}</li>
+                {% endif %}
             {% endfor %}
+            {% if data.unsellableBundles > 0 %}
+                <li class="list-group-item d-flex align-items-center justify-content-between gap-2" data-testid="dashboard-unsellable-bundles">
+                    <a href="{{ data.unsellableBundlesUrl }}" class="text-decoration-none">{{ 'Unsellable bundles'|trans }}</a>
+                    <span class="badge text-bg-danger">{{ data.unsellableBundles }}</span>
+                </li>
+            {% endif %}
         </ul>
     </div>
     {% endif %}

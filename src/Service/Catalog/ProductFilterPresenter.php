@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Catalog;
 
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -65,6 +66,8 @@ final readonly class ProductFilterPresenter
             'visible_value' => $this->triStateValue($filters->visible),
             'promo_value' => $this->triStateValue($filters->promo),
             'new_value' => $this->triStateValue($filters->new),
+            'bundle_value' => $this->triStateValue($filters->bundle),
+            'bundles_available' => BundleCore::present(),
 
             'min_price_input' => $this->formatNumber($filters->minPrice),
             'max_price_input' => $this->formatNumber($filters->maxPrice),
@@ -119,6 +122,9 @@ final readonly class ProductFilterPresenter
         if ($filters->new !== null) {
             $chips[] = $this->chip($filters, ProductFilters::KEY_NEW, 'New', $this->translator->trans($filters->new ? 'Yes' : 'No'));
         }
+        if ($filters->bundle !== null) {
+            $chips[] = $this->chip($filters, ProductFilters::KEY_BUNDLE, 'Bundle', $this->translator->trans($filters->bundle ? 'Yes' : 'No'));
+        }
         if ($filters->minPrice !== null || $filters->maxPrice !== null) {
             $chips[] = $this->chip($filters, ProductFilters::KEY_PRICE, 'Price', $this->rangeLabel($filters->minPrice, $filters->maxPrice));
         }
@@ -157,6 +163,7 @@ final readonly class ProductFilterPresenter
             $filters->visible !== null,
             $filters->promo !== null,
             $filters->new !== null,
+            $filters->bundle !== null,
             $filters->minPrice !== null || $filters->maxPrice !== null,
             $filters->minQuantity !== null || $filters->maxQuantity !== null,
             $filters->featureIds !== [],
