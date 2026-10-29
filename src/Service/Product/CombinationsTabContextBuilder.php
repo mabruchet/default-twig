@@ -38,6 +38,7 @@ final readonly class CombinationsTabContextBuilder
     public function __construct(
         private GtinDuplicateFinder $duplicateFinder = new GtinDuplicateFinder(),
         private ProductFilterCatalog $catalog = new ProductFilterCatalog(),
+        private CombinationLabeler $labeler = new CombinationLabeler(),
     ) {
     }
 
@@ -69,26 +70,8 @@ final readonly class CombinationsTabContextBuilder
         $hasCombinations = false;
         foreach ($pseRecords as $pse) {
             \assert($pse instanceof ProductSaleElements);
-            $combinationLabels = [];
-            $attributeOrder = [];
-            foreach ($pse->getAttributeCombinations() as $combination) {
-                $attribute = $combination->getAttribute();
-                $attributeAv = $combination->getAttributeAv();
-                if ($attribute === null || $attributeAv === null) {
-                    continue;
-                }
-                $attribute->setLocale($locale);
-                $attributeAv->setLocale($locale);
-                $combinationLabels[] = (string) $attribute->getTitle().': '.(string) $attributeAv->getTitle();
-                $attributeOrder[] = [
-                    $attributePositions[(int) $attribute->getId()] ?? (int) $attribute->getPosition(),
-                    (int) $attributeAv->getPosition(),
-                ];
-            }
-            sort($attributeOrder);
-            if ($combinationLabels !== []) {
-                $hasCombinations = true;
-            }
+            $description = $this->labeler->describe($pse, $locale, $attributePositions);
+            $hasCombinations = $hasCombinations || CombinationLabeler::DEFAULT_LABEL !== $description['label'];
 
             // A combination written without any price (by the API, an import) has no
             // row to read or to convert: the tab shows it unpriced instead of failing.
@@ -101,7 +84,7 @@ final readonly class CombinationsTabContextBuilder
             }
             $row = [
                 'id' => (int) $pse->getId(),
-                'label' => $combinationLabels === [] ? 'default' : implode(' / ', $combinationLabels),
+                'label' => $description['label'],
                 'ref' => (string) $pse->getRef(),
                 // Null, never 0: a 0 shown here would be saved back as a free price.
                 'price' => $price?->getPrice(),
@@ -118,7 +101,7 @@ final readonly class CombinationsTabContextBuilder
                 'visible' => (bool) $pse->getVisible(),
                 'position' => (int) $pse->getPosition(),
             ];
-            $entries[] = ['row' => $row, 'attribute_order' => $attributeOrder];
+            $entries[] = ['row' => $row, 'attribute_order' => $description['order']];
         }
 
         // The query already ordered by position then id. Combinations tied on their
