@@ -18,6 +18,7 @@ use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\Order\ForcedStatusChangeLog;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
@@ -71,6 +72,9 @@ final class OrderController
     private const LIST_TEMPLATE = '@BackOfficeDefaultTwig/order/list.html.twig';
     private const DETAIL_TEMPLATE = '@BackOfficeDefaultTwig/order/detail.html.twig';
     private const PAGE_SIZE = 25;
+    // The line types of the bundles, as strings: the constants do not exist on a core without them.
+    private const BUNDLE_LINE_TYPE = 'bundle';
+    private const BUNDLE_COMPONENT_LINE_TYPE = 'bundle_component';
 
     public function __construct(
         private readonly AdminFormAction $action,
@@ -483,7 +487,11 @@ final class OrderController
     private function orderItemsPage(int $orderId, int $page, int $perPage): array
     {
         $items = [];
+        $bundlesExist = BundleCore::present();
         foreach ($this->orderRepository->findOrderProductsPage($orderId, $page, $perPage) as $product) {
+            // The lines of the products of a bundle, which a core without bundles does not have.
+            $lineType = (string) $product->getLineType();
+            $isBundleComponent = $bundlesExist && self::BUNDLE_COMPONENT_LINE_TYPE === $lineType;
             $wasInPromo = (bool) $product->getWasInPromo();
             $unitPriceHt = (float) ($wasInPromo ? $product->getPromoPrice() : $product->getPrice());
 
@@ -534,10 +542,55 @@ final class OrderController
                 'virtual' => (bool) $product->getVirtual(),
                 'tax_rule_title' => (string) ($product->getTaxRuleTitle() ?? ''),
                 'combinations' => $combinations,
+                'is_bundle' => $bundlesExist && self::BUNDLE_LINE_TYPE === $lineType,
+                'is_bundle_component' => $isBundleComponent,
+                'bundle_line_id' => $isBundleComponent ? (int) $product->getParent() : null,
             ];
         }
 
-        return $items;
+        return $this->groupedUnderTheirBundle($items);
+    }
+
+    /**
+     * The components of a bundle come right under the line of their bundle, whatever the order
+     * the lines were read in. A component whose bundle is not on the page stays where it is.
+     *
+     * @param list<array<string, mixed>> $items
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function groupedUnderTheirBundle(array $items): array
+    {
+        $bundleIds = [];
+        foreach ($items as $item) {
+            if ($item['is_bundle']) {
+                $bundleIds[(int) $item['id']] = true;
+            }
+        }
+
+        if ([] === $bundleIds) {
+            return $items;
+        }
+
+        $componentsByBundle = [];
+        foreach ($items as $item) {
+            if ($item['is_bundle_component'] && isset($bundleIds[(int) $item['bundle_line_id']])) {
+                $componentsByBundle[(int) $item['bundle_line_id']][] = $item;
+            }
+        }
+
+        $grouped = [];
+        foreach ($items as $item) {
+            if ($item['is_bundle_component'] && isset($bundleIds[(int) $item['bundle_line_id']])) {
+                continue;
+            }
+            $grouped[] = $item;
+            foreach ($componentsByBundle[(int) $item['id']] ?? [] as $component) {
+                $grouped[] = $component;
+            }
+        }
+
+        return $grouped;
     }
 
     /**

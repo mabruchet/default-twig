@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Repository;
 
 use BackOfficeDefaultTwigBundle\DTO\Dashboard\DateRange;
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
 use Propel\Runtime\ActiveQuery\Criteria;
@@ -340,28 +341,56 @@ final class OrderRepository
         return $result;
     }
 
+    /**
+     * The lines that stand on their own: a bundle line counts as one, its components do not.
+     */
     public function countOrderProducts(int $orderId): int
     {
-        return OrderProductQuery::create()->filterByOrderId($orderId)->count();
+        $query = OrderProductQuery::create()->filterByOrderId($orderId);
+
+        // A core without bundles has no line type: every line stands on its own. The parent column
+        // is older than the bundles and says nothing of them: the type of the line does.
+        return (BundleCore::present() ? $query->filterByLineType(OrderProduct::LINE_TYPE_BUNDLE_COMPONENT, Criteria::NOT_EQUAL) : $query)->count();
     }
 
     /**
-     * @return ObjectCollection<int, OrderProduct>
+     * A page of the lines that stand on their own, each followed by its own components: the
+     * pages are cut between lines, never between a bundle and what it holds.
+     *
+     * @return list<OrderProduct>
      */
-    public function findOrderProductsPage(int $orderId, int $page, int $perPage): ObjectCollection
+    public function findOrderProductsPage(int $orderId, int $page, int $perPage): array
     {
         $page = max(1, $page);
         $offset = ($page - 1) * $perPage;
 
-        /** @var ObjectCollection<int, OrderProduct> $result */
-        $result = OrderProductQuery::create()
-            ->filterByOrderId($orderId)
-            ->orderById()
-            ->offset($offset)
-            ->limit($perPage)
-            ->find();
+        $query = OrderProductQuery::create()->filterByOrderId($orderId);
+        if (BundleCore::present()) {
+            $query->filterByLineType(OrderProduct::LINE_TYPE_BUNDLE_COMPONENT, Criteria::NOT_EQUAL);
+        }
+        $roots = $query->orderById()->offset($offset)->limit($perPage)->find();
 
-        return $result;
+        $rootIds = [];
+        foreach ($roots as $root) {
+            $rootIds[] = (int) $root->getId();
+        }
+
+        $componentsByRoot = [];
+        if (BundleCore::present() && [] !== $rootIds) {
+            foreach (OrderProductQuery::create()->filterByOrderId($orderId)->filterByLineType(OrderProduct::LINE_TYPE_BUNDLE_COMPONENT)->filterByParent($rootIds, Criteria::IN)->orderById()->find() as $component) {
+                $componentsByRoot[(int) $component->getParent()][] = $component;
+            }
+        }
+
+        $lines = [];
+        foreach ($roots as $root) {
+            $lines[] = $root;
+            foreach ($componentsByRoot[(int) $root->getId()] ?? [] as $component) {
+                $lines[] = $component;
+            }
+        }
+
+        return $lines;
     }
 
     /**

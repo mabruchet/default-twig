@@ -152,6 +152,12 @@
                             {% if item.virtual %}
                                 <i class="bi bi-download text-muted" title="{{ 'Virtual product'|trans }}" aria-hidden="true"></i>
                             {% endif %}
+                            {% if item.is_bundle %}
+                                <span class="badge text-bg-info ms-1" data-testid="order-item-bundle-badge">{{ 'Bundle'|trans }}</span>
+                            {% endif %}
+                            {% if item.is_bundle_component %}
+                                <span class="badge text-bg-secondary ms-1" data-testid="order-item-bundle-component">{{ 'Included in the bundle'|trans }}</span>
+                            {% endif %}
                         </div>
                         {% if item.pse_ref and item.pse_ref != item.ref %}
                             <small class="text-muted d-block">{{ 'Combination reference'|trans }}: <code>{{ item.pse_ref }}</code></small>
@@ -172,19 +178,22 @@
                         {% endif %}
                         {{ safe_hook('order-edit.product-list', { order_id: order.id, order_product_id: item.id, location: 'order-product-list' }) }}
                     {% endset %}
+                    {# The components of a bundle are part of what the bundle line sold: they carry no price. #}
+                    {% set priced = not item.is_bundle_component %}
                     {% set order_rows = order_rows|merge([{
                         'id': item.id,
                         'product_html': product_html,
-                        'price': item.price|format_currency(currency.code),
-                        'tax': item.tax|format_currency(currency.code),
-                        'unit_taxed_price': item.unit_taxed_price|format_currency(currency.code),
+                        'price': priced ? item.price|format_currency(currency.code) : '',
+                        'tax': priced ? item.tax|format_currency(currency.code) : '',
+                        'unit_taxed_price': priced ? item.unit_taxed_price|format_currency(currency.code) : '',
                         'quantity': item.quantity,
                         'shipped': shipped_by_line[item.id]|default(0),
                         'left': left_by_line[item.id] is defined ? left_by_line[item.id] : '',
-                        'line_ht': item.line_ht|format_currency(currency.code),
-                        'line_tax': item.line_tax|format_currency(currency.code),
-                        'line_ttc': '<span class="fw-semibold" dir="ltr">' ~ item.line_ttc|format_currency(currency.code) ~ '</span>',
-                        '_attrs': { 'data-order-product-id': item.id, 'data-testid': 'order-item-row' },
+                        'line_ht': priced ? item.line_ht|format_currency(currency.code) : '',
+                        'line_tax': priced ? item.line_tax|format_currency(currency.code) : '',
+                        'line_ttc': priced ? '<span class="fw-semibold" dir="ltr">' ~ item.line_ttc|format_currency(currency.code) ~ '</span>' : '',
+                        '_row_class': priced ? '' : 'table-light',
+                        '_attrs': { 'data-order-product-id': item.id, 'data-testid': item.is_bundle_component ? 'order-item-bundle-component-row' : 'order-item-row' },
                     }]) %}
                 {% endfor %}
 
