@@ -116,6 +116,7 @@ readonly class AdminFormAction
      * @param callable(\Throwable): Response|null                  $renderError               Optional. When omitted, errors redirect to $successRoute.
      * @param array<string, scalar>                                $successParameters
      * @param callable(object): array<string, scalar>|null         $successParametersResolver Optional. Resolve the redirect parameters from the dispatched event (e.g. the id of an entity the action just created). Overrides $successParameters when provided.
+     * @param callable(object): void|null                          $afterDispatch             Optional. Runs once the event is dispatched, before the success is logged: what the action does besides (the other rows an ordering moves). A failure is reported like the dispatch's own.
      */
     public function tokenAction(
         string $resource,
@@ -129,6 +130,7 @@ readonly class AdminFormAction
         ?callable $describeForLog = null,
         ?callable $renderError = null,
         ?callable $successParametersResolver = null,
+        ?callable $afterDispatch = null,
     ): Response {
         if ($denied = $this->access->check($resource, [], $access)) {
             return $denied;
@@ -141,6 +143,10 @@ readonly class AdminFormAction
             $token = (string) $request->request->get('_token', '');
             $this->tokens->checkToken($token);
             $this->events->dispatch($event, $eventName);
+
+            if ($afterDispatch !== null) {
+                $afterDispatch($event);
+            }
 
             $this->logSuccess($resource, $access, $event, $describeForLog);
 
