@@ -16,9 +16,9 @@ namespace BackOfficeDefaultTwigBundle\Tests\Unit\Translation;
 
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFailureMessage;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Thelia\Domain\DataTransfer\Export\ExportPeriod;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Finder\Finder;
+use Thelia\Domain\DataTransfer\Export\ExportPeriod;
 
 /**
  * Every text the back office translates is in its catalogues: one missing reads in
@@ -40,25 +40,25 @@ final class BackOfficeTranslationTest extends TestCase
 
     /** The texts each catalogue lacks, as measured when it was last changed. */
     private const KNOWN_GAPS = [
-        'ar_SA' => 1373,
-        'cs_CZ' => 1253,
-        'de_DE' => 1240,
-        'el_GR' => 1373,
-        'es_ES' => 1182,
-        'fa_IR' => 1373,
-        'he_IL' => 1373,
-        'hu_HU' => 1373,
-        'id_ID' => 1373,
-        'it_IT' => 1182,
-        'nl_NL' => 1253,
-        'pl_PL' => 1373,
-        'pt_BR' => 1373,
-        'pt_PT' => 1373,
-        'ru_RU' => 1253,
-        'sk_SK' => 1373,
-        'tr_TR' => 1373,
-        'uk_UA' => 1373,
-        'zh_CN' => 1373,
+        'ar_SA' => 1410,
+        'cs_CZ' => 1290,
+        'de_DE' => 1277,
+        'el_GR' => 1410,
+        'es_ES' => 1219,
+        'fa_IR' => 1410,
+        'he_IL' => 1410,
+        'hu_HU' => 1410,
+        'id_ID' => 1410,
+        'it_IT' => 1219,
+        'nl_NL' => 1290,
+        'pl_PL' => 1410,
+        'pt_BR' => 1410,
+        'pt_PT' => 1410,
+        'ru_RU' => 1290,
+        'sk_SK' => 1410,
+        'tr_TR' => 1410,
+        'uk_UA' => 1410,
+        'zh_CN' => 1410,
     ];
 
     #[DataProvider('catalogues')]

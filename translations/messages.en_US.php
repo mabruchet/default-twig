@@ -1,5 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
+/*
+ * This file is part of the Thelia package.
+ * http://www.thelia.net
+ *
+ * (c) OpenStudio <info@thelia.net>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 return [
     '%count% accessories added' => '%count% accessories added',
     '%count% accessories removed' => '%count% accessories removed',
@@ -1017,4 +1029,42 @@ return [
     'The assistants that hold a valid token can reach the tools of your shop. Every change they propose still waits for your approval.' => 'The assistants that hold a valid token can reach the tools of your shop. Every change they propose still waits for your approval.',
     'Revoke the token' => 'Revoke the token',
     'The assistant that uses this token is refused at the next request. This cannot be undone: create a new token to give it access again.' => 'The assistant that uses this token is refused at the next request. This cannot be undone: create a new token to give it access again.',
+    'Unsellable bundles' => 'Unsellable bundles',
+    'Bundle summary' => 'Bundle summary',
+    'This bundle has no component yet: add the products it is made of.' => 'This bundle has no component yet: add the products it is made of.',
+    'A required component is offline or deleted: this bundle cannot be sold.' => 'A required component is offline or deleted: this bundle cannot be sold.',
+    'A component is out of stock: this bundle cannot be ordered for now.' => 'A component is out of stock: this bundle cannot be ordered for now.',
+    'This bundle can be sold.' => 'This bundle can be sold.',
+    'Sum of the components' => 'Sum of the components',
+    'excl. tax, with the default composition' => 'excl. tax, with the default composition',
+    'Bundle price' => 'Bundle price',
+    'fixed price, excl. tax' => 'fixed price, excl. tax',
+    'Discount applied' => 'Discount applied',
+    'Availability' => 'Availability',
+    'bundles can be ordered, deduced from the stock of the components' => 'bundles can be ordered, deduced from the stock of the components',
+    'Add a component' => 'Add a component',
+    'Pick a category, a product, then the combination the bundle is made of. A bundle cannot be a component of another bundle.' => 'Pick a category, a product, then the combination the bundle is made of. A bundle cannot be a component of another bundle.',
+    'Select a combination...' => 'Select a combination...',
+    'Nothing to offer here: no product, or every combination is already a component.' => 'Nothing to offer here: no product, or every combination is already a component.',
+    'The combination of a component cannot be changed: remove the component and add the other one.' => 'The combination of a component cannot be changed: remove the component and add the other one.',
+    'Minimum' => 'Minimum',
+    'Maximum' => 'Maximum',
+    'Required' => 'Required',
+    'The minimum and the maximum bound the quantity a customer may choose. A required component is always part of the bundle.' => 'The minimum and the maximum bound the quantity a customer may choose. A required component is always part of the bundle.',
+    'Components' => 'Components',
+    'Deleted component' => 'Deleted component',
+    'Edit this component' => 'Edit this component',
+    'Remove this component' => 'Remove this component',
+    'This bundle has no component yet.' => 'This bundle has no component yet.',
+    'Composition' => 'Composition',
+    'Bundle' => 'Bundle',
+    'A fixed price is the one of the combination of this product; the other mode adds up the components.' => 'A fixed price is the one of the combination of this product; the other mode adds up the components.',
+    'This product is a bundle: the stock of its combination is ignored. What can be ordered follows the stock of the components.' => 'This product is a bundle: the stock of its combination is ignored. What can be ordered follows the stock of the components.',
+    'Product bundle' => 'Product bundle',
+    'Bundle discount' => 'Bundle discount',
+    'Percent' => 'Percent',
+    'The stock of a bundle is the one of its components' => 'The stock of a bundle is the one of its components',
+    'Included in the bundle' => 'Included in the bundle',
+    'Do you really want to remove this component from the bundle?' => 'Do you really want to remove this component from the bundle?',
+    'The list could not be loaded. Reload the page and try again.' => 'The list could not be loaded. Reload the page and try again.',
 ];
