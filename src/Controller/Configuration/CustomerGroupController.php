@@ -170,7 +170,7 @@ final class CustomerGroupController
             'customer_group_customers' => $this->customerGroups->countCustomers($customer_group_id),
             'categories_list_emptied' => 1 === $customerGroup->getRestrictsCategories() && [] === $this->customerGroups->categoryIdsOf($customer_group_id),
             'payment_modules_list_emptied' => 1 === $customerGroup->getRestrictsPaymentModules() && [] === $this->customerGroups->paymentModuleIdsOf($customer_group_id),
-            'registration_available' => 1 !== $customerGroup->getIsDefault(),
+            'registration_available' => 1 !== $customerGroup->getIsDefault() && !$this->restricted->isRestricted(),
             'registration_url' => $this->registrationUrl($customerGroup, $request),
             'form' => $this->modificationForm($customerGroup, $locale, $request->getLocale())->createView(),
             'edit_language_id' => (int) $editLang->getId(),
@@ -296,12 +296,14 @@ final class CustomerGroupController
 
     /**
      * The sign-up form of the group on the storefront, as an absolute URL: the shop URL of the
-     * configuration, or the host this screen is served from when none is set.
+     * configuration, or the host this screen is served from when none is set. Whoever holds it signs
+     * accounts up into the group: an administrator restricted to a sale unit, who may not put a
+     * customer in the group, is not handed it.
      */
     private function registrationUrl(CustomerGroup $customerGroup, Request $request): ?string
     {
         $token = $customerGroup->getRegistrationToken();
-        if (null === $token || 1 === $customerGroup->getIsDefault()) {
+        if (null === $token || 1 === $customerGroup->getIsDefault() || $this->restricted->isRestricted()) {
             return null;
         }
 

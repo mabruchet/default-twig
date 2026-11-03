@@ -905,6 +905,8 @@ final class CustomerGroupBackOfficeTest extends WebIntegrationTestCase
         $crawler = $this->client->request('GET', self::LIST_URL.'/update/'.$group->getId());
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         self::assertCount(0, $crawler->filter('[data-testid="customer-group-registration-regenerate"], [data-testid="customer-group-registration-close"], [data-testid="customer-group-registration-open"]'), 'No write is offered.');
+        self::assertCount(0, $crawler->filter('[data-testid="customer-group-registration-url"]'), 'The link, which signs accounts up into the group, is not handed to it.');
+        self::assertStringNotContainsString((string) $before, (string) $this->client->getResponse()->getContent(), 'Nor is its token.');
     }
 
     public function testSavingAnotherFieldKeepsARestrictedGroupWhoseListWasEmptiedByDeletionClosed(): void
