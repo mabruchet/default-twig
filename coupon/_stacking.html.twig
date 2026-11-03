@@ -1,0 +1,43 @@
+{#
+    How the promotion stacks with the others: one choice, a priority and the
+    promotions it is incompatible with. The selection logic lives in the core;
+    this fragment only posts what the merchant picked.
+
+    Context: data.stackingMode, data.priority, data.excludedCouponIds, exclusion_choices
+#}
+<fieldset class="mb-3" data-testid="coupon-stacking">
+    <legend class="form-label fs-6">{{ 'Combination with other promotions'|trans }}</legend>
+    {% set stacking_choices = [
+        { value: 'cumulative', label: 'Combines with the others'|trans },
+        { value: 'stop', label: 'Stops the next promotions'|trans },
+        { value: 'alone', label: 'Applies alone'|trans },
+    ] %}
+    {% for choice in stacking_choices %}
+        <div class="form-check">
+            <input id="stacking-mode-{{ choice.value }}" type="radio" class="form-check-input" name="stackingMode" value="{{ choice.value }}" {% if data.stackingMode == choice.value %}checked{% endif %} data-testid="coupon-stacking-{{ choice.value }}">
+            <label class="form-check-label" for="stacking-mode-{{ choice.value }}">{{ choice.label }}</label>
+        </div>
+    {% endfor %}
+</fieldset>
+
+<div class="mb-3">
+    <label class="form-label" for="coupon-priority">{{ 'Priority'|trans }}</label>
+    <input id="coupon-priority" type="number" step="1" inputmode="numeric" class="form-control" name="priority" value="{{ data.priority }}" data-testid="coupon-priority">
+    <span class="form-text small">{{ 'The smallest applies first.'|trans }}</span>
+</div>
+
+<div class="mb-3">
+    <label class="form-label" for="coupon-excluded">{{ 'Incompatible promotions'|trans }}</label>
+    {# An empty multiple select posts nothing: this marker tells a cleared list from a form that never carried it. #}
+    <input type="hidden" name="excludedCouponIdsPresent" value="1">
+    {% include '@BackOfficeDefaultTwig/fragments/customer-multiselect.html.twig' with {
+        name: 'excludedCouponIds[]',
+        id: 'coupon-excluded',
+        choices: exclusion_choices,
+        selected: data.excludedCouponIds,
+        testid: 'coupon-excluded',
+        size: 6,
+        filter_hint: 'Filter…'|trans,
+        help: 'Never applied together with the promotions selected here. The link works in both directions. Up to 200 promotions are listed, plus the ones already selected; use the filter to narrow the list.'|trans,
+    } only %}
+</div>

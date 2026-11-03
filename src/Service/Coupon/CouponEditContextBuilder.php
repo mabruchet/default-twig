@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Coupon;
 
+use BackOfficeDefaultTwigBundle\Repository\CouponStackingRepository;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -40,6 +41,7 @@ final readonly class CouponEditContextBuilder
         private CouponInputsRenderer $inputsRenderer,
         private TranslatorInterface $translator,
         private CountryStateProvider $countryStates,
+        private CouponStackingRepository $stacking,
     ) {
     }
 
@@ -52,6 +54,7 @@ final readonly class CouponEditContextBuilder
         $context['coupon'] = null;
         $context['coupon_id'] = null;
         $context['data'] = $this->defaultData($locale);
+        $context['exclusion_choices'] = $this->stacking->exclusionChoices(null, [], $locale);
         $context['data']['startDate'] = $now->format($context['date_format']);
         $context['data']['expirationDate'] = (clone $now)->modify('+2 months')->format($context['date_format']);
         $context['coupon_inputs_html'] = '';
@@ -74,6 +77,7 @@ final readonly class CouponEditContextBuilder
         $context['coupon'] = $coupon;
         $context['coupon_id'] = (int) $coupon->getId();
         $context['data'] = $this->dataFromModel($coupon, $locale);
+        $context['exclusion_choices'] = $this->stacking->exclusionChoices((int) $coupon->getId(), $context['data']['excludedCouponIds'], $locale);
         $context['coupon_inputs_html'] = $this->inputsRenderer->renderForServiceId((string) $coupon->getType(), $manager);
         $context['conditions'] = $this->summarizeConditions($conditionCollection);
         $context['no_conditions'] = false;
@@ -130,7 +134,16 @@ final readonly class CouponEditContextBuilder
         // the value. Reading them any other way would tick them all back on.
         $data['isEnabled'] = \array_key_exists('isEnabled', $posted);
         $data['isAvailableOnSpecialOffers'] = \array_key_exists('isAvailableOnSpecialOffers', $posted);
-        $data['isCumulative'] = \array_key_exists('isCumulative', $posted);
+        // The stacking choice is a radio: it always posts, so the value is read,
+        // not its presence. A client that never sent it leaves the stored choice.
+        $stacking = CouponStackingInput::fromPostedData($posted);
+        if (null !== $stacking->mode) {
+            $data['stackingMode'] = $stacking->mode->value;
+        }
+        if (null !== $stacking->typedPriority) {
+            $data['priority'] = $stacking->typedPriority;
+        }
+        $data['excludedCouponIds'] = $stacking->excludedCouponIds ?? $data['excludedCouponIds'];
         $data['isRemovingPostage'] = \array_key_exists('isRemovingPostage', $posted);
         $data['maxUsage'] = \array_key_exists('is-unlimited', $posted) || ($posted['maxUsage'] ?? '') === ''
             ? -1
@@ -140,6 +153,11 @@ final readonly class CouponEditContextBuilder
         $data['freeShippingForModules'] = $this->postedIdList($posted, 'freeShippingForModules') ?? $data['freeShippingForModules'];
 
         $context['data'] = $data;
+        $context['exclusion_choices'] = $this->stacking->exclusionChoices(
+            $context['coupon_id'] ?? null,
+            $data['excludedCouponIds'],
+            (string) $data['locale'],
+        );
 
         /** @var array<string, mixed> $postedEffects */
         $postedEffects = \is_array($posted[CouponAbstract::COUPON_DATASET_NAME] ?? null)
@@ -243,7 +261,9 @@ final readonly class CouponEditContextBuilder
             'startDate' => '',
             'expirationDate' => '',
             'isAvailableOnSpecialOffers' => false,
-            'isCumulative' => false,
+            'stackingMode' => CouponStackingMode::Cumulative->value,
+            'priority' => 0,
+            'excludedCouponIds' => [],
             'isRemovingPostage' => false,
             'maxUsage' => -1,
             'perCustomerUsageCount' => 1,
@@ -280,7 +300,9 @@ final readonly class CouponEditContextBuilder
             'startDate' => $coupon->getStartDate() === null ? '' : (string) $coupon->getStartDate($dateFormat),
             'expirationDate' => (string) $coupon->getExpirationDate($dateFormat),
             'isAvailableOnSpecialOffers' => (bool) $coupon->getIsAvailableOnSpecialOffers(),
-            'isCumulative' => (bool) $coupon->getIsCumulative(),
+            'stackingMode' => CouponStackingMode::fromFlags((bool) $coupon->getIsCumulative(), (bool) $coupon->getStopProcessing())->value,
+            'priority' => (int) $coupon->getPriority(),
+            'excludedCouponIds' => $this->stacking->excludedIds((int) $coupon->getId()),
             'isRemovingPostage' => (bool) $coupon->getIsRemovingPostage(),
             'maxUsage' => (int) $coupon->getMaxUsage(),
             'perCustomerUsageCount' => $coupon->getPerCustomerUsageCount() ? 1 : 0,

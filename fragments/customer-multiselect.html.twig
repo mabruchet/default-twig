@@ -14,8 +14,10 @@
     with_email - whether the labels carry an e-mail address, which only an admin with
                  the right to view customers is handed (CustomerChoiceProvider decides):
                  the filter hint has to say what is really searchable (default false)
+    filter_hint - optional text of the search box, for a list that is not of customers
+    help       - optional text under the select (default: the customer list bound)
 #}
-{% set filter_hint = with_email|default(false) ? 'Filter (name, ref, email)…'|trans : 'Filter (name, ref)…'|trans %}
+{% set filter_hint = filter_hint|default(with_email|default(false) ? 'Filter (name, ref, email)…'|trans : 'Filter (name, ref)…'|trans) %}
 <div data-controller="bo-multiselect-search">
     <input type="search"
            class="form-control mb-2"
@@ -36,5 +38,5 @@
             <option value="{{ choice.id }}" {{ choice.id in selected ? 'selected' : '' }}>{{ choice.label }}</option>
         {% endfor %}
     </select>
-    <span class="form-text small">{{ 'Up to the 50 latest customers and already-selected customers are listed. Use the filter to narrow the list.'|trans }}</span>
+    <span class="form-text small">{{ help|default('Up to the 50 latest customers and already-selected customers are listed. Use the filter to narrow the list.'|trans) }}</span>
 </div>

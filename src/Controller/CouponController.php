@@ -14,12 +14,14 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Controller;
 
+use BackOfficeDefaultTwigBundle\Repository\CouponStackingRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFailureMessage;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Coupon\CouponConditionsRenderer;
 use BackOfficeDefaultTwigBundle\Service\Coupon\CouponEditContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Coupon\CouponInputsRenderer;
+use BackOfficeDefaultTwigBundle\Service\Coupon\CouponStackingInput;
 use BackOfficeDefaultTwigBundle\Service\Coupon\CouponTriggerModeInput;
 use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\ListSort;
@@ -80,6 +82,7 @@ final class CouponController
         #[Autowire(service: 'thelia.coupon.manager')]
         private readonly CouponManager $couponManager,
         private readonly EditLocaleResolver $editLocale,
+        private readonly CouponStackingRepository $stacking,
     ) {
     }
 
@@ -92,7 +95,7 @@ final class CouponController
 
         $locale = $this->defaultLocale();
         $page = max(1, (int) $request->query->get('page', 1));
-        $sort = ListSort::fromRequest($request, ['id', 'code', 'title', 'is_enabled', 'expiration_date'], 'code');
+        $sort = ListSort::fromRequest($request, ['id', 'code', 'title', 'is_enabled', 'expiration_date', 'priority'], 'code');
         $criteria = strtoupper($sort->direction) === 'DESC' ? Criteria::DESC : Criteria::ASC;
 
         $modeFilter = $this->modeFilter($request);
@@ -105,6 +108,7 @@ final class CouponController
             'id' => $query->orderById($criteria),
             'is_enabled' => $query->orderByIsEnabled($criteria),
             'expiration_date' => $query->orderByExpirationDate($criteria),
+            'priority' => $query->orderByPriority($criteria)->orderByCode(Criteria::ASC),
             'title' => $query->useCouponI18nQuery(null, Criteria::LEFT_JOIN)->filterByLocale($locale)->orderByTitle($criteria)->endUse(),
             default => $query->orderByCode($criteria),
         };
@@ -116,10 +120,16 @@ final class CouponController
         $rows = [];
         $dateFormat = $this->defaultDateFormat();
         $typeLabels = $this->couponTypeLabels();
+        $coupons = [];
         foreach ($query->offset(($page - 1) * self::PAGE_SIZE)->limit(self::PAGE_SIZE)->find() as $coupon) {
             \assert($coupon instanceof Coupon);
             $coupon->setLocale($locale);
-            $rows[] = $this->couponToRow($coupon, $dateFormat, $typeLabels);
+            $coupons[] = $coupon;
+        }
+        // One grouped count for the whole page, never one query per row.
+        $exclusionCounts = $this->stacking->exclusionCounts(array_map(static fn (Coupon $coupon): int => (int) $coupon->getId(), $coupons));
+        foreach ($coupons as $coupon) {
+            $rows[] = $this->couponToRow($coupon, $dateFormat, $typeLabels, $exclusionCounts[(int) $coupon->getId()] ?? 0);
         }
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
@@ -431,6 +441,12 @@ final class CouponController
             return $this->renderWithError($request, $coupon, AdminFailureMessage::of($exception, $this->translator));
         }
 
+        $stacking = CouponStackingInput::fromPostedData($data);
+        $stackingError = $stacking->validationError($this->translator);
+        if (null !== $stackingError) {
+            return $this->renderWithError($request, $coupon, $stackingError);
+        }
+
         $event = new CouponCreateOrUpdateEvent(
             $triggerMode->code,
             $serviceId,
@@ -441,7 +457,7 @@ final class CouponController
             $this->boolish($data['isEnabled'] ?? null),
             $expiration,
             $this->boolish($data['isAvailableOnSpecialOffers'] ?? null),
-            $this->boolish($data['isCumulative'] ?? null),
+            $stacking->mode?->isCumulative() ?? $this->boolish($data['isCumulative'] ?? null),
             $this->boolish($data['isRemovingPostage'] ?? null),
             $this->maxUsage($data['maxUsage'] ?? null, $data['is-unlimited'] ?? null),
             (string) ($data['locale'] ?? $this->defaultLocale()),
@@ -453,6 +469,8 @@ final class CouponController
 
         $event->setTriggerMode($triggerMode->triggerMode);
 
+        $stacking->applyTo($event);
+
         if ($coupon !== null) {
             $event->setCouponModel($coupon);
         }
@@ -460,7 +478,7 @@ final class CouponController
         try {
             $this->events->dispatch($event, $eventName);
         } catch (\Throwable $exception) {
-            return $this->renderWithError($request, $coupon, AdminFailureMessage::of($exception, $this->translator));
+            return $this->renderWithError($request, $coupon, CouponStackingInput::refusalMessage($exception, $this->translator) ?? AdminFailureMessage::of($exception, $this->translator));
         }
 
         $savedCoupon = $event->getCouponModel();
@@ -535,7 +553,7 @@ final class CouponController
      *
      * @return array<string, mixed>
      */
-    private function couponToRow(Coupon $coupon, string $dateFormat, array $typeLabels): array
+    private function couponToRow(Coupon $coupon, string $dateFormat, array $typeLabels, int $exclusionCount = 0): array
     {
         $id = (int) $coupon->getId();
         $editHref = $this->urls->generate(self::EDIT_ROUTE, ['couponId' => $id]);
@@ -558,9 +576,26 @@ final class CouponController
             'start_date' => null === $coupon->getStartDate() ? '' : (string) $coupon->getStartDate($dateFormat),
             'expiration_date' => null === $coupon->getExpirationDate() ? '' : (string) $coupon->getExpirationDate($dateFormat),
             'days_left' => $this->daysLeftLabel($coupon),
+            'priority' => (int) $coupon->getPriority(),
+            'stacking' => $this->stackingLabel($coupon, $exclusionCount),
             'usages_left' => $coupon->isUsageUnlimited() ? $this->translator->trans('Unlimited') : (string) max(0, (int) $coupon->getUsagesLeft()),
             '_actions' => $actions,
         ];
+    }
+
+    private function stackingLabel(Coupon $coupon, int $exclusionCount): string
+    {
+        $parts = [];
+        if (!$coupon->getIsCumulative()) {
+            $parts[] = $this->translator->trans('Applies alone');
+        } elseif ($coupon->getStopProcessing()) {
+            $parts[] = $this->translator->trans('Stops the next promotions');
+        }
+        if ($exclusionCount > 0) {
+            $parts[] = $this->translator->trans('%count% incompatible', ['%count%' => $exclusionCount]);
+        }
+
+        return implode(', ', $parts);
     }
 
     /**

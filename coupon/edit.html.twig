@@ -129,10 +129,7 @@
                                 <input id="is-available-on-special-offers" type="checkbox" name="isAvailableOnSpecialOffers" class="form-check-input" value="1" {% if data.isAvailableOnSpecialOffers %}checked{% endif %}>
                                 <label class="form-check-label" for="is-available-on-special-offers">{{ 'Valid on special offers'|trans }}</label>
                             </div>
-                            <div class="mb-3 form-check">
-                                <input id="is-cumulative" type="checkbox" name="isCumulative" class="form-check-input" value="1" {% if data.isCumulative %}checked{% endif %}>
-                                <label class="form-check-label" for="is-cumulative">{{ 'Combinable with other promotions'|trans }}</label>
-                            </div>
+                            {% include '@BackOfficeDefaultTwig/coupon/_stacking.html.twig' %}
 
                             <div data-controller="bo-date-range" data-bo-date-range-format-value="{{ date_format }}">
                                 <div class="mb-3">
