@@ -94,7 +94,9 @@ final readonly class CouponStackingInput
         if (null !== $this->priority) {
             $event->setPriority($this->priority);
         }
-        if (null !== $this->mode) {
+        // A promotion that applies alone stops the others whatever its flag says: the flag stays as stored,
+        // so a promotion saved before the stacking fields existed saves again unchanged.
+        if (null !== $this->mode && CouponStackingMode::Alone !== $this->mode) {
             $event->setStopProcessing($this->mode->stopsProcessing());
         }
         if (null !== $this->excludedCouponIds) {
