@@ -1718,4 +1718,5 @@ return [
     '%count% incompatible' => '%count% incompatibile/i',
     'The priority must be a whole number.' => 'La priorità deve essere un numero intero.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Le promozioni incompatibili non sono valide: una promozione non può essere incompatibile con se stessa e ognuna di quelle scelte deve ancora esistere.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Un altro amministratore ha modificato le promozioni nello stesso momento, quindi non è stato salvato nulla: salva di nuovo.',
 ];

@@ -1496,4 +1496,5 @@ return [
     '%count% incompatible' => '%count% uyumsuz',
     'The priority must be a whole number.' => 'Öncelik tam sayı olmalıdır.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Uyumsuz promosyonlar geçerli değil: bir promosyon kendisiyle uyumsuz olamaz ve seçilen her promosyon hâlâ mevcut olmalıdır.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Başka bir yönetici promosyonları aynı anda değiştirdi, bu yüzden hiçbir şey kaydedilmedi: yeniden kaydedin.',
 ];

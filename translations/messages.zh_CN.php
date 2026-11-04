@@ -1495,4 +1495,5 @@ return [
     '%count% incompatible' => '%count% 个不兼容',
     'The priority must be a whole number.' => '优先级必须为整数。',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => '不兼容的促销无效：促销不能与自身不兼容，且所选的每个促销必须仍然存在。',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => '另一位管理员同时修改了促销，因此未保存任何内容：请重新保存。',
 ];

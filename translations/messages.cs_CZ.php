@@ -1624,4 +1624,5 @@ return [
     '%count% incompatible' => 'Nekompatibilních: %count%',
     'The priority must be a whole number.' => 'Priorita musí být celé číslo.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Nekompatibilní akce nejsou platné: akce nemůže být nekompatibilní sama se sebou a každá vybraná akce musí stále existovat.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Jiný administrátor současně upravil akce, proto se nic neuložilo: uložte znovu.',
 ];

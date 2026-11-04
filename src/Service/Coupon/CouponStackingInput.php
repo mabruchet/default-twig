@@ -80,6 +80,9 @@ final readonly class CouponStackingInput
     public static function refusalMessage(\Throwable $failure, TranslatorInterface $translator): ?string
     {
         for ($cause = $failure; null !== $cause; $cause = $cause->getPrevious()) {
+            if ($cause instanceof InvalidCouponExclusionException && $cause->isConcurrentEdit()) {
+                return $translator->trans('Another administrator changed the promotions at the same time, so nothing was saved: save again.');
+            }
             if ($cause instanceof InvalidCouponExclusionException) {
                 return $translator->trans('The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.');
             }

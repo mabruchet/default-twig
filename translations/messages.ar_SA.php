@@ -1495,4 +1495,5 @@ return [
     '%count% incompatible' => '%count% غير متوافق',
     'The priority must be a whole number.' => 'يجب أن تكون الأولوية عددًا صحيحًا.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'العروض الترويجية غير المتوافقة غير صالحة: لا يمكن أن يكون العرض غير متوافق مع نفسه، ويجب أن يظل كل عرض محدد موجودًا.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'قام مسؤول آخر بتعديل العروض الترويجية في الوقت نفسه، لذلك لم يُحفظ أي شيء: احفظ مرة أخرى.',
 ];

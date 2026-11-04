@@ -1625,4 +1625,5 @@ return [
     '%count% incompatible' => 'Несовместимых: %count%',
     'The priority must be a whole number.' => 'Приоритет должен быть целым числом.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Несовместимые акции недопустимы: акция не может быть несовместима сама с собой, и каждая выбранная акция должна по-прежнему существовать.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Другой администратор одновременно изменил акции, поэтому ничего не сохранено: сохраните ещё раз.',
 ];

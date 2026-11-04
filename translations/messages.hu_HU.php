@@ -1496,4 +1496,5 @@ return [
     '%count% incompatible' => '%count% összeférhetetlen',
     'The priority must be a whole number.' => 'A prioritásnak egész számnak kell lennie.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Az összeférhetetlen akciók érvénytelenek: egy akció nem lehet összeférhetetlen önmagával, és minden kiválasztott akciónak továbbra is léteznie kell.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Egy másik adminisztrátor ugyanabban az időben módosította az akciókat, ezért semmi sem lett mentve: mentsen újra.',
 ];

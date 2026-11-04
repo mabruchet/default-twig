@@ -1496,4 +1496,5 @@ return [
     '%count% incompatible' => '%count% ناسازگار',
     'The priority must be a whole number.' => 'اولویت باید یک عدد صحیح باشد.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'تخفیف‌های ناسازگار معتبر نیستند: یک تخفیف نمی‌تواند با خودش ناسازگار باشد و هر تخفیف انتخاب‌شده باید همچنان وجود داشته باشد.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'مدیر دیگری هم‌زمان تخفیف‌ها را تغییر داد، بنابراین چیزی ذخیره نشد: دوباره ذخیره کنید.',
 ];

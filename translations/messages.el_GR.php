@@ -1495,4 +1495,5 @@ return [
     '%count% incompatible' => '%count% ασύμβατες',
     'The priority must be a whole number.' => 'Η προτεραιότητα πρέπει να είναι ακέραιος αριθμός.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Οι ασύμβατες προωθήσεις δεν είναι έγκυρες: μια προώθηση δεν μπορεί να είναι ασύμβατη με τον εαυτό της και κάθε επιλεγμένη πρέπει να υπάρχει ακόμη.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Ένας άλλος διαχειριστής άλλαξε ταυτόχρονα τις προωθητικές ενέργειες, οπότε δεν αποθηκεύτηκε τίποτα: αποθηκεύστε ξανά.',
 ];

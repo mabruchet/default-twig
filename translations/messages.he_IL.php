@@ -1495,4 +1495,5 @@ return [
     '%count% incompatible' => '%count% לא תואמים',
     'The priority must be a whole number.' => 'העדיפות חייבת להיות מספר שלם.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'המבצעים שאינם תואמים אינם חוקיים: מבצע לא יכול להיות בלתי תואם לעצמו, וכל מבצע שנבחר חייב להמשיך להתקיים.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'מנהל אחר שינה את המבצעים באותו זמן, ולכן דבר לא נשמר: שמרו שוב.',
 ];

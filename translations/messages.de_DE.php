@@ -1638,4 +1638,5 @@ return [
     '%count% incompatible' => '%count% inkompatibel',
     'The priority must be a whole number.' => 'Die Priorität muss eine ganze Zahl sein.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Die inkompatiblen Aktionen sind ungültig: Eine Aktion kann nicht mit sich selbst inkompatibel sein, und jede gewählte Aktion muss noch existieren.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Ein anderer Administrator hat die Aktionen gleichzeitig geändert, daher wurde nichts gespeichert: Speichern Sie erneut.',
 ];

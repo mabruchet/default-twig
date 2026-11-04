@@ -1495,4 +1495,5 @@ return [
     '%count% incompatible' => 'Niezgodne: %count%',
     'The priority must be a whole number.' => 'Priorytet musi być liczbą całkowitą.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Niezgodne promocje są nieprawidłowe: promocja nie może być niezgodna sama ze sobą, a każda z wybranych musi nadal istnieć.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Inny administrator zmienił promocje w tym samym czasie, więc nic nie zostało zapisane: zapisz ponownie.',
 ];

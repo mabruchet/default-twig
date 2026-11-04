@@ -1624,4 +1624,5 @@ return [
     '%count% incompatible' => '%count% onverenigbaar',
     'The priority must be a whole number.' => 'De prioriteit moet een geheel getal zijn.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'De onverenigbare promoties zijn ongeldig: een promotie kan niet onverenigbaar zijn met zichzelf, en elke gekozen promotie moet nog bestaan.',
+    'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Een andere beheerder heeft de acties tegelijkertijd gewijzigd, er is dus niets opgeslagen: sla opnieuw op.',
 ];
