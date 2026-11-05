@@ -1625,4 +1625,11 @@ return [
     'The priority must be a whole number.' => 'De prioriteit moet een geheel getal zijn.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'De onverenigbare promoties zijn ongeldig: een promotie kan niet onverenigbaar zijn met zichzelf, en elke gekozen promotie moet nog bestaan.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Een andere beheerder heeft de acties tegelijkertijd gewijzigd, er is dus niets opgeslagen: sla opnieuw op.',
+    'Newsletter sign-up is on' => 'Inschrijving op de nieuwsbrief is ingeschakeld',
+    'Newsletter sign-up is off' => 'Inschrijving op de nieuwsbrief is uitgeschakeld',
+    'Turn newsletter sign-up on' => 'Inschrijving op de nieuwsbrief inschakelen',
+    'Turn newsletter sign-up off' => 'Inschrijving op de nieuwsbrief uitschakelen',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'De winkel biedt geen inschrijving op de nieuwsbrief meer aan. Bestaande abonnees blijven behouden.',
+    'Newsletter sign-up switch' => 'Schakelaar voor inschrijving op de nieuwsbrief',
+    'The state asked for the newsletter is not valid.' => 'De gevraagde status voor de nieuwsbrief is ongeldig.',
 ];

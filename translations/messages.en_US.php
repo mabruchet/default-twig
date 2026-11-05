@@ -1227,4 +1227,11 @@ return [
     'restock expected on %date%' => 'restock expected on %date%',
     'Default threshold' => 'Default threshold',
     'Stock' => 'Stock',
+    'Newsletter sign-up is on' => 'Newsletter sign-up is on',
+    'Newsletter sign-up is off' => 'Newsletter sign-up is off',
+    'Turn newsletter sign-up on' => 'Turn newsletter sign-up on',
+    'Turn newsletter sign-up off' => 'Turn newsletter sign-up off',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'The shop no longer offers newsletter sign-up. Existing subscribers are kept.',
+    'Newsletter sign-up switch' => 'Newsletter sign-up switch',
+    'The state asked for the newsletter is not valid.' => 'The state asked for the newsletter is not valid.',
 ];

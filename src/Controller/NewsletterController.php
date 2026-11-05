@@ -16,6 +16,8 @@ namespace BackOfficeDefaultTwigBundle\Controller;
 
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormErrorRenderer;
+use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\ListSort;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Propel\Runtime\ActiveQuery\Criteria;
@@ -30,8 +32,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Event\Newsletter\NewsletterEvent;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Security\AccessManager;
+use Thelia\Model\ConfigQuery;
 use Thelia\Model\Newsletter;
 use Thelia\Model\NewsletterQuery;
+use Thelia\Tools\TokenProvider;
 use Twig\Environment;
 
 #[Route('/admin/newsletter', name: 'admin.newsletter.')]
@@ -48,6 +52,9 @@ final class NewsletterController
         private readonly UrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
         private readonly Packages $assetPackages,
+        private readonly TokenProvider $tokens,
+        private readonly AdminLogger $adminLogger,
+        private readonly AdminFormErrorRenderer $errorRenderer,
     ) {
     }
 
@@ -78,6 +85,10 @@ final class NewsletterController
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'rows' => $rows,
             'export_url' => $this->urls->generate('admin.newsletter.export'),
+            'newsletter_enabled' => ConfigQuery::isNewsletterEnabled(),
+            'can_switch' => $this->access->canUpdate(self::RESOURCE),
+            'switch_url' => $this->urls->generate('admin.newsletter.switch'),
+            'switch_token' => $this->tokens->assignToken(),
             'sort_field' => $sort->field,
             'sort_direction' => $sort->direction,
         ]));
@@ -104,6 +115,41 @@ final class NewsletterController
             actionLabel: 'Newsletter subscriber removal',
             successRoute: self::LIST_ROUTE,
         );
+    }
+
+    /**
+     * Written straight to the configuration table: a single shop setting, with no model to
+     * build and nothing for a module to listen for. The posted value is the state to reach,
+     * not a toggle, so two open tabs cannot undo each other.
+     */
+    #[Route('/switch', name: 'switch', methods: ['POST'])]
+    public function switch(Request $request): Response
+    {
+        if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
+            return $denied;
+        }
+
+        $label = $this->translator->trans('Newsletter sign-up switch');
+
+        try {
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
+        } catch (\Throwable $exception) {
+            $this->errorRenderer->fail($label, $exception);
+
+            return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
+        }
+
+        $state = $request->request->get('newsletter_enabled');
+        if (!\in_array($state, ['0', '1'], true)) {
+            $this->errorRenderer->refuse($label, $this->translator->trans('The state asked for the newsletter is not valid.'));
+
+            return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
+        }
+
+        ConfigQuery::write('newsletter_enabled', $state, false);
+        $this->adminLogger->log(self::RESOURCE, AccessManager::UPDATE, '1' === $state ? 'Newsletter sign-up turned on' : 'Newsletter sign-up turned off', null);
+
+        return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
     }
 
     #[Route('/export', name: 'export', methods: ['GET'])]

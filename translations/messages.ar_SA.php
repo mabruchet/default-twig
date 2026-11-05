@@ -1496,4 +1496,11 @@ return [
     'The priority must be a whole number.' => 'يجب أن تكون الأولوية عددًا صحيحًا.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'العروض الترويجية غير المتوافقة غير صالحة: لا يمكن أن يكون العرض غير متوافق مع نفسه، ويجب أن يظل كل عرض محدد موجودًا.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'قام مسؤول آخر بتعديل العروض الترويجية في الوقت نفسه، لذلك لم يُحفظ أي شيء: احفظ مرة أخرى.',
+    'Newsletter sign-up is on' => 'التسجيل في النشرة البريدية مفعّل',
+    'Newsletter sign-up is off' => 'التسجيل في النشرة البريدية معطّل',
+    'Turn newsletter sign-up on' => 'تفعيل التسجيل في النشرة البريدية',
+    'Turn newsletter sign-up off' => 'تعطيل التسجيل في النشرة البريدية',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'لم يعد المتجر يتيح التسجيل في النشرة البريدية. يتم الاحتفاظ بالمشتركين الحاليين.',
+    'Newsletter sign-up switch' => 'مفتاح التسجيل في النشرة البريدية',
+    'The state asked for the newsletter is not valid.' => 'الحالة المطلوبة للنشرة البريدية غير صالحة.',
 ];

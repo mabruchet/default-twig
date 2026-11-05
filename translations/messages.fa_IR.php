@@ -1497,4 +1497,11 @@ return [
     'The priority must be a whole number.' => 'اولویت باید یک عدد صحیح باشد.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'تخفیف‌های ناسازگار معتبر نیستند: یک تخفیف نمی‌تواند با خودش ناسازگار باشد و هر تخفیف انتخاب‌شده باید همچنان وجود داشته باشد.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'مدیر دیگری هم‌زمان تخفیف‌ها را تغییر داد، بنابراین چیزی ذخیره نشد: دوباره ذخیره کنید.',
+    'Newsletter sign-up is on' => 'ثبت‌نام در خبرنامه فعال است',
+    'Newsletter sign-up is off' => 'ثبت‌نام در خبرنامه غیرفعال است',
+    'Turn newsletter sign-up on' => 'فعال کردن ثبت‌نام در خبرنامه',
+    'Turn newsletter sign-up off' => 'غیرفعال کردن ثبت‌نام در خبرنامه',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'فروشگاه دیگر ثبت‌نام در خبرنامه را ارائه نمی‌دهد. مشترکان فعلی حفظ می‌شوند.',
+    'Newsletter sign-up switch' => 'کلید ثبت‌نام در خبرنامه',
+    'The state asked for the newsletter is not valid.' => 'وضعیت درخواستی برای خبرنامه معتبر نیست.',
 ];

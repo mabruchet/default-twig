@@ -1496,4 +1496,11 @@ return [
     'The priority must be a whole number.' => 'A prioridade deve ser um número inteiro.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'As promoções incompatíveis não são válidas: uma promoção não pode ser incompatível consigo mesma, e cada uma das escolhidas deve ainda existir.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Outro administrador alterou as promoções ao mesmo tempo, então nada foi salvo: salve novamente.',
+    'Newsletter sign-up is on' => 'A inscrição na newsletter está ativada',
+    'Newsletter sign-up is off' => 'A inscrição na newsletter está desativada',
+    'Turn newsletter sign-up on' => 'Ativar a inscrição na newsletter',
+    'Turn newsletter sign-up off' => 'Desativar a inscrição na newsletter',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'A loja não oferece mais a inscrição na newsletter. Os assinantes existentes são mantidos.',
+    'Newsletter sign-up switch' => 'Chave de inscrição na newsletter',
+    'The state asked for the newsletter is not valid.' => 'O estado solicitado para a newsletter não é válido.',
 ];

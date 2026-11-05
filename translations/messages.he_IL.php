@@ -1496,4 +1496,11 @@ return [
     'The priority must be a whole number.' => 'העדיפות חייבת להיות מספר שלם.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'המבצעים שאינם תואמים אינם חוקיים: מבצע לא יכול להיות בלתי תואם לעצמו, וכל מבצע שנבחר חייב להמשיך להתקיים.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'מנהל אחר שינה את המבצעים באותו זמן, ולכן דבר לא נשמר: שמרו שוב.',
+    'Newsletter sign-up is on' => 'ההרשמה לניוזלטר פעילה',
+    'Newsletter sign-up is off' => 'ההרשמה לניוזלטר כבויה',
+    'Turn newsletter sign-up on' => 'הפעל את ההרשמה לניוזלטר',
+    'Turn newsletter sign-up off' => 'כבה את ההרשמה לניוזלטר',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'החנות כבר אינה מציעה הרשמה לניוזלטר. המנויים הקיימים נשמרים.',
+    'Newsletter sign-up switch' => 'מתג ההרשמה לניוזלטר',
+    'The state asked for the newsletter is not valid.' => 'המצב שהתבקש עבור הניוזלטר אינו תקין.',
 ];

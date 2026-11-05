@@ -1496,4 +1496,11 @@ return [
     'The priority must be a whole number.' => 'Пріоритет має бути цілим числом.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Несумісні акції недійсні: акція не може бути несумісною сама з собою, а кожна обрана акція має все ще існувати.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Інший адміністратор одночасно змінив акції, тому нічого не збережено: збережіть ще раз.',
+    'Newsletter sign-up is on' => 'Підписка на розсилку увімкнена',
+    'Newsletter sign-up is off' => 'Підписка на розсилку вимкнена',
+    'Turn newsletter sign-up on' => 'Увімкнути підписку на розсилку',
+    'Turn newsletter sign-up off' => 'Вимкнути підписку на розсилку',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'Магазин більше не пропонує підписку на розсилку. Наявні підписники зберігаються.',
+    'Newsletter sign-up switch' => 'Перемикач підписки на розсилку',
+    'The state asked for the newsletter is not valid.' => 'Запитаний стан розсилки недійсний.',
 ];

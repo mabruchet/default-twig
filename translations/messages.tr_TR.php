@@ -1497,4 +1497,11 @@ return [
     'The priority must be a whole number.' => 'Öncelik tam sayı olmalıdır.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Uyumsuz promosyonlar geçerli değil: bir promosyon kendisiyle uyumsuz olamaz ve seçilen her promosyon hâlâ mevcut olmalıdır.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Başka bir yönetici promosyonları aynı anda değiştirdi, bu yüzden hiçbir şey kaydedilmedi: yeniden kaydedin.',
+    'Newsletter sign-up is on' => 'Bülten kaydı açık',
+    'Newsletter sign-up is off' => 'Bülten kaydı kapalı',
+    'Turn newsletter sign-up on' => 'Bülten kaydını aç',
+    'Turn newsletter sign-up off' => 'Bülten kaydını kapat',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'Mağaza artık bülten kaydı sunmuyor. Mevcut aboneler korunur.',
+    'Newsletter sign-up switch' => 'Bülten kaydı anahtarı',
+    'The state asked for the newsletter is not valid.' => 'Bülten için istenen durum geçerli değil.',
 ];

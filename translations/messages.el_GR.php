@@ -1496,4 +1496,11 @@ return [
     'The priority must be a whole number.' => 'Η προτεραιότητα πρέπει να είναι ακέραιος αριθμός.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Οι ασύμβατες προωθήσεις δεν είναι έγκυρες: μια προώθηση δεν μπορεί να είναι ασύμβατη με τον εαυτό της και κάθε επιλεγμένη πρέπει να υπάρχει ακόμη.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Ένας άλλος διαχειριστής άλλαξε ταυτόχρονα τις προωθητικές ενέργειες, οπότε δεν αποθηκεύτηκε τίποτα: αποθηκεύστε ξανά.',
+    'Newsletter sign-up is on' => 'Η εγγραφή στο ενημερωτικό δελτίο είναι ενεργή',
+    'Newsletter sign-up is off' => 'Η εγγραφή στο ενημερωτικό δελτίο είναι ανενεργή',
+    'Turn newsletter sign-up on' => 'Ενεργοποίηση της εγγραφής στο ενημερωτικό δελτίο',
+    'Turn newsletter sign-up off' => 'Απενεργοποίηση της εγγραφής στο ενημερωτικό δελτίο',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'Το κατάστημα δεν προσφέρει πλέον εγγραφή στο ενημερωτικό δελτίο. Οι υπάρχοντες συνδρομητές διατηρούνται.',
+    'Newsletter sign-up switch' => 'Διακόπτης εγγραφής στο ενημερωτικό δελτίο',
+    'The state asked for the newsletter is not valid.' => 'Η κατάσταση που ζητήθηκε για το ενημερωτικό δελτίο δεν είναι έγκυρη.',
 ];

@@ -17,11 +17,29 @@
     <div class="container-fluid" data-testid="newsletter-page">
         {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Newsletter subscribers'|trans } %}
             {% block actions %}
+                {% if can_switch %}
+                    <form method="post" action="{{ switch_url }}" class="d-flex align-items-center gap-2 m-0" data-testid="newsletter-switch-form">
+                        <input type="hidden" name="_token" value="{{ switch_token }}">
+                        <input type="hidden" name="newsletter_enabled" value="{{ newsletter_enabled ? '0' : '1' }}">
+                        <span class="small" data-testid="newsletter-state">{{ newsletter_enabled ? 'Newsletter sign-up is on'|trans : 'Newsletter sign-up is off'|trans }}</span>
+                        <button type="submit" class="btn btn-outline-primary btn-sm" data-testid="newsletter-switch-button">
+                            {{ newsletter_enabled ? 'Turn newsletter sign-up off'|trans : 'Turn newsletter sign-up on'|trans }}
+                        </button>
+                    </form>
+                {% else %}
+                    <span class="badge {{ newsletter_enabled ? 'text-bg-success' : 'text-bg-secondary' }}" data-testid="newsletter-state">{{ newsletter_enabled ? 'Newsletter sign-up is on'|trans : 'Newsletter sign-up is off'|trans }}</span>
+                {% endif %}
                 <a href="{{ export_url }}" class="btn btn-outline-primary btn-sm" data-testid="newsletter-export-button">
                     <i class="bi bi-download" aria-hidden="true"></i> {{ 'Export CSV'|trans }}
                 </a>
             {% endblock %}
         {% endembed %}
+
+        {% if not newsletter_enabled %}
+            <div class="alert alert-warning" role="status" data-testid="newsletter-disabled-notice">
+                {{ 'The shop no longer offers newsletter sign-up. Existing subscribers are kept.'|trans }}
+            </div>
+        {% endif %}
 
         {{ component('BoDataTable', {
             id: 'newsletter',

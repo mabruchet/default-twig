@@ -1497,4 +1497,11 @@ return [
     'The priority must be a whole number.' => 'A prioritásnak egész számnak kell lennie.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Az összeférhetetlen akciók érvénytelenek: egy akció nem lehet összeférhetetlen önmagával, és minden kiválasztott akciónak továbbra is léteznie kell.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Egy másik adminisztrátor ugyanabban az időben módosította az akciókat, ezért semmi sem lett mentve: mentsen újra.',
+    'Newsletter sign-up is on' => 'A hírlevél-feliratkozás be van kapcsolva',
+    'Newsletter sign-up is off' => 'A hírlevél-feliratkozás ki van kapcsolva',
+    'Turn newsletter sign-up on' => 'Hírlevél-feliratkozás bekapcsolása',
+    'Turn newsletter sign-up off' => 'Hírlevél-feliratkozás kikapcsolása',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'A bolt már nem kínál hírlevél-feliratkozást. A meglévő feliratkozók megmaradnak.',
+    'Newsletter sign-up switch' => 'Hírlevél-feliratkozás kapcsolója',
+    'The state asked for the newsletter is not valid.' => 'A hírlevélhez kért állapot érvénytelen.',
 ];

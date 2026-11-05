@@ -1625,4 +1625,11 @@ return [
     'The priority must be a whole number.' => 'Priorita musí být celé číslo.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Nekompatibilní akce nejsou platné: akce nemůže být nekompatibilní sama se sebou a každá vybraná akce musí stále existovat.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Jiný administrátor současně upravil akce, proto se nic neuložilo: uložte znovu.',
+    'Newsletter sign-up is on' => 'Přihlášení k odběru newsletteru je zapnuto',
+    'Newsletter sign-up is off' => 'Přihlášení k odběru newsletteru je vypnuto',
+    'Turn newsletter sign-up on' => 'Zapnout přihlášení k odběru newsletteru',
+    'Turn newsletter sign-up off' => 'Vypnout přihlášení k odběru newsletteru',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'Obchod již nenabízí přihlášení k odběru newsletteru. Stávající odběratelé zůstávají zachováni.',
+    'Newsletter sign-up switch' => 'Přepínač přihlášení k odběru newsletteru',
+    'The state asked for the newsletter is not valid.' => 'Požadovaný stav newsletteru není platný.',
 ];

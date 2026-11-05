@@ -1496,4 +1496,11 @@ return [
     'The priority must be a whole number.' => '优先级必须为整数。',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => '不兼容的促销无效：促销不能与自身不兼容，且所选的每个促销必须仍然存在。',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => '另一位管理员同时修改了促销，因此未保存任何内容：请重新保存。',
+    'Newsletter sign-up is on' => '电子报订阅已开启',
+    'Newsletter sign-up is off' => '电子报订阅已关闭',
+    'Turn newsletter sign-up on' => '开启电子报订阅',
+    'Turn newsletter sign-up off' => '关闭电子报订阅',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => '商店不再提供电子报订阅。现有订阅者将保留。',
+    'Newsletter sign-up switch' => '电子报订阅开关',
+    'The state asked for the newsletter is not valid.' => '电子报所请求的状态无效。',
 ];

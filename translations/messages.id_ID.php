@@ -1496,4 +1496,11 @@ return [
     'The priority must be a whole number.' => 'Prioritas harus berupa bilangan bulat.',
     'The incompatible promotions are not valid: a promotion cannot be incompatible with itself, and each one chosen must still exist.' => 'Promosi yang tidak kompatibel tidak valid: sebuah promosi tidak dapat tidak kompatibel dengan dirinya sendiri, dan setiap promosi yang dipilih harus masih ada.',
     'Another administrator changed the promotions at the same time, so nothing was saved: save again.' => 'Administrator lain mengubah promosi pada saat yang sama, sehingga tidak ada yang disimpan: simpan lagi.',
+    'Newsletter sign-up is on' => 'Pendaftaran newsletter aktif',
+    'Newsletter sign-up is off' => 'Pendaftaran newsletter nonaktif',
+    'Turn newsletter sign-up on' => 'Aktifkan pendaftaran newsletter',
+    'Turn newsletter sign-up off' => 'Nonaktifkan pendaftaran newsletter',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'Toko tidak lagi menawarkan pendaftaran newsletter. Pelanggan yang ada tetap dipertahankan.',
+    'Newsletter sign-up switch' => 'Sakelar pendaftaran newsletter',
+    'The state asked for the newsletter is not valid.' => 'Status yang diminta untuk newsletter tidak valid.',
 ];
