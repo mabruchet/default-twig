@@ -36,6 +36,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Core\Security\SecurityContext;
+use Thelia\Domain\Catalog\Stock\StockSettings;
 use Thelia\Domain\OrderReturn\Service\ReturnEligibilityChecker;
 use Thelia\Model\Currency;
 use Thelia\Model\Order;
@@ -68,7 +69,6 @@ final readonly class DashboardStatsProvider
     private const RECENT_ORDERS_LIMIT = 8;
     private const TOP_PRODUCTS_LIMIT = 5;
     private const LOW_STOCK_LIMIT = 5;
-    private const LOW_STOCK_THRESHOLD = 5;
 
     public function __construct(
         private OrderRepository $orders,
@@ -86,6 +86,7 @@ final readonly class DashboardStatsProvider
         private ContentPublicationSupport $publicationSupport,
         private ClockInterface $clock,
         private UnsellableBundleCounter $unsellableBundles,
+        private StockSettings $stockSettings,
     ) {
     }
 
@@ -151,6 +152,7 @@ final readonly class DashboardStatsProvider
         }
 
         $recentOrders = $canViewOrders ? $this->loadRecentOrders() : [];
+        $lowStockThreshold = $this->stockSettings->lowStockThreshold();
 
         return new DashboardData(
             range: $range,
@@ -163,8 +165,8 @@ final readonly class DashboardStatsProvider
             ),
             // Top sellers expose order amounts, so they follow the orders resource.
             topProducts: $canViewOrders ? $this->products->findTopSellers($range, self::TOP_PRODUCTS_LIMIT, $locale) : [],
-            lowStockProducts: $canViewProducts ? $this->products->findLowStock(self::LOW_STOCK_THRESHOLD, self::LOW_STOCK_LIMIT, $locale) : [],
-            lowStockThreshold: self::LOW_STOCK_THRESHOLD,
+            lowStockProducts: $canViewProducts ? $this->products->findLowStock($lowStockThreshold, self::LOW_STOCK_LIMIT, $locale) : [],
+            lowStockThreshold: $lowStockThreshold,
             alerts: $this->buildAlerts($canViewOrders),
             periodOptions: $this->periodOptions->build($range, 'admin.home'),
             locale: $locale,

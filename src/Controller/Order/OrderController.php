@@ -542,6 +542,8 @@ final class OrderController
                 'virtual' => (bool) $product->getVirtual(),
                 'tax_rule_title' => (string) ($product->getTaxRuleTitle() ?? ''),
                 'combinations' => $combinations,
+                'is_preorder' => 1 === (int) $product->getIsPreorder(),
+                'restock_date' => $product->getRestockDate(),
                 'is_bundle' => $bundlesExist && self::BUNDLE_LINE_TYPE === $lineType,
                 'is_bundle_component' => $isBundleComponent,
                 'bundle_line_id' => $isBundleComponent ? (int) $product->getParent() : null,

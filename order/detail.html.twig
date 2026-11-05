@@ -159,6 +159,9 @@
                                 <span class="badge text-bg-secondary ms-1" data-testid="order-item-bundle-component">{{ 'Included in the bundle'|trans }}</span>
                             {% endif %}
                         </div>
+                        {% if item.is_preorder %}
+                            <span class="badge text-bg-warning ms-1" data-testid="order-item-preorder">{{ 'Preorder'|trans }}{% if item.restock_date %} ({{ 'restock expected on %date%'|trans({ '%date%': item.restock_date|format_date }) }}){% endif %}</span>
+                        {% endif %}
                         {% if item.pse_ref and item.pse_ref != item.ref %}
                             <small class="text-muted d-block">{{ 'Combination reference'|trans }}: <code>{{ item.pse_ref }}</code></small>
                         {% endif %}

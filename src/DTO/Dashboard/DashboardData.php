@@ -39,7 +39,7 @@ final readonly class DashboardData
         public array $recentOrderAmounts,
         public array $topProducts,
         public array $lowStockProducts,
-        public int $lowStockThreshold,
+        public float $lowStockThreshold,
         public array $alerts,
         public array $periodOptions,
         public string $locale,

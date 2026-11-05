@@ -64,6 +64,7 @@ import BoRangeSliderController from './controllers/bo-range-slider_controller.js
 import BoSaleProductAttributesController from './controllers/bo-sale-product-attributes_controller.js';
 import BoSaleProductPickerController from './controllers/bo-sale-product-picker_controller.js';
 import BoSaleTargetingController from './controllers/bo-sale-targeting_controller.js';
+import BoStockPolicyController from './controllers/bo-stock-policy_controller.js';
 import BoSortableController from './controllers/bo-sortable_controller.js';
 import BoScrollIntoViewController from './controllers/bo-scroll-into-view_controller.js';
 import BoStateCascadeController from './controllers/bo-state-cascade_controller.js';
@@ -146,6 +147,7 @@ app.register('bo-sale-targeting', BoSaleTargetingController);
 app.register('bo-scroll-into-view', BoScrollIntoViewController);
 app.register('bo-sortable', BoSortableController);
 app.register('bo-state-cascade', BoStateCascadeController);
+app.register('bo-stock-policy', BoStockPolicyController);
 app.register('bo-system-logs', BoSystemLogsController);
 app.register('bo-tag-picker', BoTagPickerController);
 app.register('bo-tax-rule-matrix', BoTaxRuleMatrixController);

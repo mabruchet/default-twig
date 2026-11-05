@@ -81,24 +81,26 @@ final readonly class OrderListRowPresenter
         $totals = $this->orderRepository->findTotalAmountByOrder($orderIds);
         $moduleTitles = $this->moduleRepository->findLocalizedTitles($locale);
         $saleUnitTitles = $this->saleUnits->titlesById($locale);
+        $preorderOrderIds = $this->orderRepository->findPreorderOrderIds($orderIds);
 
         $rows = [];
         foreach ($page as $order) {
-            $rows[] = $this->present($order, $locale, $itemCounts, $totals, $moduleTitles, $saleUnitTitles);
+            $rows[] = $this->present($order, $locale, $itemCounts, $totals, $moduleTitles, $saleUnitTitles, $preorderOrderIds);
         }
 
         return $rows;
     }
 
     /**
-     * @param array<int, int>     $itemCounts     number of lines per order id, when the caller has them
-     * @param array<int, float>   $totals         amount per order id, when the caller has them
-     * @param array<int, ?string> $moduleTitles   module titles per module id, when the caller has them
-     * @param array<int, string>  $saleUnitTitles sale unit titles per sale unit id, when the caller has them
+     * @param array<int, int>     $itemCounts       number of lines per order id, when the caller has them
+     * @param array<int, float>   $totals           amount per order id, when the caller has them
+     * @param array<int, ?string> $moduleTitles     module titles per module id, when the caller has them
+     * @param array<int, string>  $saleUnitTitles   sale unit titles per sale unit id, when the caller has them
+     * @param list<int>           $preorderOrderIds the orders of the page that hold a preorder line
      *
      * @return array<string, mixed>
      */
-    public function present(Order $order, string $locale, array $itemCounts = [], array $totals = [], array $moduleTitles = [], array $saleUnitTitles = []): array
+    public function present(Order $order, string $locale, array $itemCounts = [], array $totals = [], array $moduleTitles = [], array $saleUnitTitles = [], array $preorderOrderIds = []): array
     {
         $orderId = (int) $order->getId();
         $status = OrderStatusQuery::create()->findPk((int) $order->getStatusId());
@@ -141,7 +143,7 @@ final readonly class OrderListRowPresenter
             'status_code' => (string) ($status?->getCode() ?? ''),
             'status_color' => (string) ($status?->getColor() ?: self::FALLBACK_STATUS_COLOR),
             'customer_html' => $this->renderCustomer($order),
-            'items_html' => $this->renderItems($orderId, $itemCounts),
+            'items_html' => $this->renderItems($orderId, $itemCounts, $preorderOrderIds),
             'payment_delivery_html' => $this->renderModule($paymentTitle, 'bi-credit-card')
                 .'<div class="mt-1">'.$this->renderDelivery($order, $deliveryTitle).'</div>',
             'amount' => $this->formatAmount($order, $totals, $locale),
@@ -215,8 +217,9 @@ final readonly class OrderListRowPresenter
 
     /**
      * @param array<int, int> $itemCounts
+     * @param list<int>       $preorderOrderIds
      */
-    private function renderItems(int $orderId, array $itemCounts): string
+    private function renderItems(int $orderId, array $itemCounts, array $preorderOrderIds): string
     {
         $count = \array_key_exists($orderId, $itemCounts)
             ? $itemCounts[$orderId]
@@ -226,9 +229,18 @@ final readonly class OrderListRowPresenter
             ['%count%' => $count],
         );
 
-        return \sprintf(
+        $items = \sprintf(
             '<span class="badge text-bg-light bo-order-items"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>%s</span>',
             htmlspecialchars($label),
+        );
+
+        if (!\in_array($orderId, $preorderOrderIds, true)) {
+            return $items;
+        }
+
+        return $items.\sprintf(
+            ' <span class="badge text-bg-warning bo-order-preorder" data-testid="bo-order-preorder-badge"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>%s</span>',
+            htmlspecialchars($this->translator->trans('Preorder')),
         );
     }
 

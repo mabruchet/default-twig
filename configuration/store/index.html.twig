@@ -151,6 +151,16 @@
                         </div>
                     </div>
 
+                    <div class="card mb-4" data-testid="config-store-stock">
+                        <div class="card-header">{{ 'Stock'|trans }}</div>
+                        <div class="card-body">
+                            {{ form_row(form.stock_reservation_enabled, { attr: { 'data-testid': 'config-store-stock-reservation-enabled' } }) }}
+                            {{ form_row(form.stock_reservation_scope, { attr: { 'data-testid': 'config-store-stock-reservation-scope' } }) }}
+                            {{ form_row(form.stock_reservation_duration, { attr: { 'data-testid': 'config-store-stock-reservation-duration', 'min': 1 } }) }}
+                            {{ form_row(form.low_stock_threshold, { attr: { 'data-testid': 'config-store-low-stock-threshold', 'min': 0 } }) }}
+                        </div>
+                    </div>
+
                     <div class="card mb-4">
                         <div class="card-header">{{ 'Administrators'|trans }}</div>
                         <div class="card-body">

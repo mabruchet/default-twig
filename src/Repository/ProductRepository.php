@@ -140,12 +140,18 @@ final readonly class ProductRepository
     }
 
     /**
+     * The combinations whose stock reached their alert threshold. A combination that
+     * sets its own threshold is judged against it, the others against $threshold, the
+     * one of the shop.
+     *
+     * The shop threshold is the one resolved by Thelia\Domain\Catalog\Stock\LowStockThreshold.
+     *
      * @return list<ProductSaleElements>
      */
-    public function findLowStock(int $threshold, int $limit, string $locale): array
+    public function findLowStock(float $threshold, int $limit, string $locale): array
     {
         $query = ProductSaleElementsQuery::create()
-            ->filterByQuantity($threshold, Criteria::LESS_EQUAL)
+            ->where('ProductSaleElements.Quantity <= COALESCE(ProductSaleElements.LowStockThreshold, ?)', $threshold, \PDO::PARAM_STR)
             ->orderByQuantity(Criteria::ASC)
             // Several combinations sitting on the same quantity is the normal case;
             // without a tie-break the shop sees a different list on every refresh.
