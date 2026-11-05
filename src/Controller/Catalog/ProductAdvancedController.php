@@ -23,6 +23,7 @@ use BackOfficeDefaultTwigBundle\Service\Product\CombinationPositionMover;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationsTabContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Product\GroupPricesContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Product\SaleUnitValuesContextBuilder;
+use BackOfficeDefaultTwigBundle\Service\Product\StockSettingsSubmission;
 use BackOfficeDefaultTwigBundle\Service\SaleUnit\RestrictedAdminGuard;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -674,12 +675,29 @@ final class ProductAdvancedController
         // A grid copy made before the visibility boxes existed sends no marker: leave the visibility as it is.
         $visible = $form->all('visible');
         $sendsVisibility = $form->has('visible_sent');
+        $outOfStockPolicies = $form->all('out_of_stock_policy');
+        $preorderLimits = $form->all('preorder_limit');
+        $restockDates = $form->all('restock_date');
+        $lowStockThresholds = $form->all('low_stock_threshold');
         $saved = [];
 
         $unpriced = [];
+        $invalidStockSettings = [];
         foreach ($ids as $index => $rawId) {
             $pseId = (int) $rawId;
             if ($pseId <= 0) {
+                continue;
+            }
+
+            // A setting that is not valid costs its own row only, like a missing price.
+            $stockSettings = StockSettingsSubmission::fromInput(
+                $outOfStockPolicies[$index] ?? null,
+                $preorderLimits[$index] ?? null,
+                $restockDates[$index] ?? null,
+                $lowStockThresholds[$index] ?? null,
+            );
+            if (!$stockSettings->isValid()) {
+                $invalidStockSettings[] = $this->referenceOf($refs[$index] ?? null, $pseId);
                 continue;
             }
 
@@ -707,6 +725,7 @@ final class ProductAdvancedController
                 ->setManufacturerBrandId(isset($manufacturerBrands[$index]) ? (int) $manufacturerBrands[$index] : null)
                 ->setTaxRuleId($taxRule)
                 ->setFromDefaultCurrency($useExchangeRate);
+            $stockSettings->applyTo($event);
 
             // A refused code costs its own row only: the other combinations of the grid
             // are saved, and the refusal says which one and why.
@@ -723,6 +742,7 @@ final class ProductAdvancedController
 
         $this->identifierNotices->reportSharedCodes($saved);
         $this->noticeUnpricedCombinations($request, $unpriced);
+        $this->noticeInvalidStockSettings($request, $invalidStockSettings);
 
         return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['product_id' => $productId, 'current_tab' => 'pse']));
     }
@@ -889,6 +909,17 @@ final class ProductAdvancedController
 
                 return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['product_id' => $productId, 'current_tab' => 'pse']));
             }
+            $stockSettings = StockSettingsSubmission::fromInput(
+                $form->get('out_of_stock_policy'),
+                $form->get('preorder_limit'),
+                $form->get('restock_date'),
+                $form->get('low_stock_threshold'),
+            );
+            if (!$stockSettings->isValid()) {
+                $this->noticeInvalidStockSettings($request, [$this->referenceOf($form->get('reference'), $pseId)]);
+
+                return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['product_id' => $productId, 'current_tab' => 'pse']));
+            }
             $event = new ProductSaleElementUpdateEvent($product, $pseId);
             $event
                 ->setReference((string) $form->get('reference', ''))
@@ -905,6 +936,7 @@ final class ProductAdvancedController
                 ->setManufacturerBrandId($form->has('manufacturer_brand_id') ? (int) $form->get('manufacturer_brand_id') : null)
                 ->setTaxRuleId((int) $form->get('tax_rule', (int) $product->getTaxRuleId()))
                 ->setFromDefaultCurrency((int) $form->get('use_exchange_rate', 0));
+            $stockSettings->applyTo($event);
 
             try {
                 $events->dispatch($event, TheliaEvents::PRODUCT_UPDATE_PRODUCT_SALE_ELEMENT);
@@ -1318,6 +1350,24 @@ final class ProductAdvancedController
         if ($session instanceof FlashBagAwareSessionInterface) {
             $session->getFlashBag()->add('danger', $this->translator->trans(
                 'Not saved until a price is entered: %references%.',
+                ['%references%' => implode(', ', $references)],
+            ));
+        }
+    }
+
+    /**
+     * @param list<string> $references
+     */
+    private function noticeInvalidStockSettings(Request $request, array $references): void
+    {
+        if ($references === [] || !$request->hasSession()) {
+            return;
+        }
+
+        $session = $request->getSession();
+        if ($session instanceof FlashBagAwareSessionInterface) {
+            $session->getFlashBag()->add('danger', $this->translator->trans(
+                'Not saved, a stock setting is not valid (quantities and thresholds are zero or more, the date is a real day): %references%.',
                 ['%references%' => implode(', ', $references)],
             ));
         }

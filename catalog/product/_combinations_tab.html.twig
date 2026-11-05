@@ -151,6 +151,7 @@
                                             <input type="radio" name="default_pse" value="{{ row.id }}" hidden {% if row.isdefault %}checked{% endif %}
                                                    aria-label="{{ 'Default combination'|trans }}"
                                                    data-bo-combination-default-target="radio" data-pse-id="{{ row.id }}">
+                                            {{ include('@BackOfficeDefaultTwig/catalog/product/_combination_stock_fields.html.twig', { row: row, field_id: field_id, stock_policies: stock_policies, limited_policy: limited_policy, default_low_stock_threshold: default_low_stock_threshold }, with_context = false) }}
                                         </td>
                                         {# A module returns its own <td>, rowspan="3" to cover the three lines of the combination, on product.combinations-table-row. #}
                                         {{ safe_hook('product.combinations-table-row', { pse_id: row.id, pse: row.id, idx: idx, product: product.id, product_id: product.id }) }}
@@ -563,6 +564,32 @@
                                         <div class="mb-3">
                                             <label class="form-label" for="default_pse_quantity">{{ 'Stock quantity'|trans }}</label>
                                             <input type="number" step="any" id="default_pse_quantity" name="quantity" value="{{ default_pse.quantity }}" class="form-control" required>
+                                        </div>
+
+                                        <div class="mb-3" data-controller="bo-stock-policy" data-bo-stock-policy-limited-value="{{ limited_policy }}">
+                                            <label class="form-label" for="default_pse_out_of_stock_policy">{{ 'At zero stock'|trans }}</label>
+                                            <select id="default_pse_out_of_stock_policy" name="out_of_stock_policy" class="form-select"
+                                                    data-bo-stock-policy-target="policy" data-action="change->bo-stock-policy#toggle" data-testid="default-pse-policy">
+                                                {% for policy in stock_policies %}
+                                                    <option value="{{ policy.value }}"{{ policy.value == default_pse.out_of_stock_policy ? ' selected' }}>{{ policy.label|trans }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <div class="mt-2{{ default_pse.out_of_stock_policy != limited_policy ? ' d-none' }}" data-bo-stock-policy-target="limit">
+                                                <label class="form-label" for="default_pse_preorder_limit">{{ 'Preorder limit'|trans }}</label>
+                                                <input type="number" step="any" id="default_pse_preorder_limit" name="preorder_limit" value="{{ default_pse.preorder_limit }}" class="form-control" data-testid="default-pse-preorder-limit">
+                                                <div class="form-text">{{ 'Units that can be sold below zero.'|trans }}</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="default_pse_restock_date">{{ 'Restock date'|trans }}</label>
+                                            <input type="date" id="default_pse_restock_date" name="restock_date" value="{{ default_pse.restock_date }}" class="form-control" data-testid="default-pse-restock-date">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="default_pse_low_stock_threshold">{{ 'Low stock threshold'|trans }}</label>
+                                            <input type="number" step="any" min="0" id="default_pse_low_stock_threshold" name="low_stock_threshold" value="{{ default_pse.low_stock_threshold }}" placeholder="{{ default_low_stock_threshold }}" class="form-control" data-testid="default-pse-low-stock-threshold">
+                                            <div class="form-text">{{ 'Empty: the threshold of the shop applies'|trans }}</div>
                                         </div>
 
                                         {{ safe_hook('product.details-details-form', { product: product.id, location: 'product_details_details_form' }) }}

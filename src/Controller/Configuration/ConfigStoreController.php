@@ -36,6 +36,7 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Core\SharedCache\SharedCacheMode;
 use Thelia\Core\SharedCache\SharedCachePolicy;
+use Thelia\Domain\Catalog\Stock\StockSettings;
 use Thelia\Domain\Checkout\Enum\GuestCheckoutMode;
 use Thelia\Domain\Localization\VisitorCountry\VisitorCountrySettings;
 use Thelia\Domain\Media\Video\VideoProviderResolver;
@@ -74,6 +75,7 @@ final class ConfigStoreController
         private readonly TranslatorInterface $translator,
         private readonly CountryStateProvider $countryStates,
         private readonly FileProcessorService $fileProcessor,
+        private readonly StockSettings $stockSettings,
     ) {
     }
 
@@ -148,10 +150,13 @@ final class ConfigStoreController
     }
 
     /**
-     * @return array<string, string|null>
+     * @return array<string, string|int|float|null>
      */
     private function readStoreData(): array
     {
+        // Read through the settings object: a stored 0 is a value there, and only a
+        // missing or malformed one falls back on the default.
+        $stock = $this->stockSettings;
         $data = [
             'store_name' => (string) ConfigQuery::read('store_name', ''),
             'store_description' => (string) ConfigQuery::read('store_description', ''),
@@ -179,6 +184,10 @@ final class ConfigStoreController
             'admin_two_factor_required' => (string) ConfigQuery::read('admin_two_factor_required', '0'),
             'shared_cache_mode' => SharedCacheMode::fromShopConfiguration()->value,
             'shared_cache_ttl' => (string) SharedCachePolicy::ttl(),
+            StockSettings::RESERVATION_ENABLED => $stock->reservationEnabled() ? '1' : '0',
+            StockSettings::RESERVATION_SCOPE => $stock->reservationScope()->value,
+            StockSettings::RESERVATION_DURATION => $stock->reservationDurationMinutes(),
+            StockSettings::LOW_STOCK_THRESHOLD => $stock->lowStockThreshold(),
             'video_providers' => (string) ConfigQuery::read(VideoProviderResolver::PROVIDERS_VARIABLE, VideoProviderResolver::DEFAULT_PROVIDERS),
         ];
 

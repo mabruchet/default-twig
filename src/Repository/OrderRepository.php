@@ -204,6 +204,30 @@ final class OrderRepository
     }
 
     /**
+     * The orders, among these, that hold at least one preorder line, in one query.
+     * An order whose lines are all available is absent from the result.
+     *
+     * @param list<int> $orderIds
+     *
+     * @return list<int>
+     */
+    public function findPreorderOrderIds(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $found = OrderProductQuery::create()
+            ->filterByOrderId($orderIds, Criteria::IN)
+            ->filterByIsPreorder(1)
+            ->select(['OrderId'])
+            ->distinct()
+            ->find();
+
+        return array_map(intval(...), $found->toArray());
+    }
+
+    /**
      * The amount each of these orders is worth, in one query instead of one per
      * order, and to the cent what Order::getTotalAmount() answers.
      *

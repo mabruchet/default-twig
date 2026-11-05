@@ -173,7 +173,7 @@
     {% if data.showLowStock %}
     <div class="card shadow-sm border-0">
         <div class="card-header bg-body-tertiary d-flex align-items-center">
-            <h2 class="h6 mb-0"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>{{ 'Low stock'|trans }} <small class="text-muted">(&le;&nbsp;{{ data.lowStockThreshold }})</small></h2>
+            <h2 class="h6 mb-0"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>{{ 'Low stock'|trans }} <small class="text-muted" data-testid="dashboard-low-stock-title">({{ 'Default threshold'|trans }} &le;&nbsp;{{ data.lowStockThreshold }})</small></h2>
         </div>
         <ul class="list-group list-group-flush small">
             {% for pse in data.lowStockProducts %}

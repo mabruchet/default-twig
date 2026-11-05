@@ -21,6 +21,7 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -36,6 +37,8 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\SharedCache\SharedCacheMode;
 use Thelia\Core\SharedCache\SharedCachePolicy;
+use Thelia\Domain\Catalog\Stock\StockReservationScope;
+use Thelia\Domain\Catalog\Stock\StockSettings;
 use Thelia\Domain\Checkout\Enum\GuestCheckoutMode;
 use Thelia\Domain\Legal\CompanyIdentifier;
 use Thelia\Domain\Localization\VisitorCountry\VisitorCountryMode;
@@ -75,6 +78,7 @@ final class ConfigStoreType extends AbstractType
         'store_registration_exempt',
         'admin_two_factor_required',
         'order_shipped_email_enabled',
+        StockSettings::RESERVATION_ENABLED,
     ];
 
     public function __construct(
@@ -233,6 +237,31 @@ final class ConfigStoreType extends AbstractType
                 'constraints' => [new NotBlank(), new Range(min: 1, max: SharedCachePolicy::MAX_TTL)],
                 'label' => $this->translator->trans('Shared cache lifetime (seconds)'),
                 'help' => $this->translator->trans('How long a shared cache may keep a public page. An invalid value falls back to 300 seconds.'),
+            ])
+            ->add(StockSettings::RESERVATION_ENABLED, CheckboxType::class, [
+                'required' => false,
+                'label' => $this->translator->trans('Reserve the stock of a cart'),
+                'help' => $this->translator->trans('The quantity a customer is about to order is held for them, so that nobody else can take the last items meanwhile.'),
+            ])
+            ->add(StockSettings::RESERVATION_SCOPE, ChoiceType::class, [
+                'constraints' => [new NotBlank()],
+                'label' => $this->translator->trans('The reservation starts'),
+                'choices' => [
+                    $this->translator->trans('When the customer enters the checkout') => StockReservationScope::Checkout->value,
+                    $this->translator->trans('As soon as an item is added to the cart') => StockReservationScope::Cart->value,
+                ],
+                'placeholder' => false,
+            ])
+            ->add(StockSettings::RESERVATION_DURATION, IntegerType::class, [
+                'constraints' => [new NotBlank(), new Range(min: 1, max: 100000)],
+                'label' => $this->translator->trans('Reservation duration (minutes)'),
+                'help' => $this->translator->trans('Extended at each step of the checkout. A reservation that has run out is never counted.'),
+            ])
+            ->add(StockSettings::LOW_STOCK_THRESHOLD, NumberType::class, [
+                'constraints' => [new NotBlank(), new Range(min: 0, max: 1000000)],
+                'html5' => true,
+                'label' => $this->translator->trans('Low stock threshold'),
+                'help' => $this->translator->trans('A product whose stock falls to this quantity or below is reported as low. A combination can set its own threshold.'),
             ])
             ->add('video_providers', ChoiceType::class, [
                 'required' => false,

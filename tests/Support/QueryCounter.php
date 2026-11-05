@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Tests\Support;
 
 use Propel\Runtime\Connection\ConnectionWrapper;
 use Propel\Runtime\Propel;
+use Psr\Log\AbstractLogger;
 
 /**
  * How many SQL queries a piece of back-office code sends.
@@ -57,5 +58,45 @@ final class QueryCounter
         }
 
         return $after - $before;
+    }
+
+    /**
+     * The SQL statements $work sends, as the connection logs them. For a test that
+     * must tell one kind of query from the others, where a total could hide a
+     * query that moved from one place to another.
+     *
+     * @return list<string>
+     */
+    public static function statements(callable $work): array
+    {
+        $connection = Propel::getConnection('TheliaMain');
+
+        if (!$connection instanceof ConnectionWrapper) {
+            throw new \RuntimeException('Listing queries needs a Propel ConnectionWrapper, got '.get_debug_type($connection).'.');
+        }
+
+        $logger = new class extends AbstractLogger {
+            /** @var list<string> */
+            public array $statements = [];
+
+            public function log($level, string|\Stringable $message, array $context = []): void
+            {
+                $this->statements[] = (string) $message;
+            }
+        };
+
+        $wasDebug = $connection->isInDebugMode();
+        $previousLogger = $connection->getLogger();
+        $connection->setLogger($logger);
+        $connection->useDebug(true);
+
+        try {
+            $work();
+        } finally {
+            $connection->useDebug($wasDebug);
+            $connection->setLogger($previousLogger);
+        }
+
+        return $logger->statements;
     }
 }
