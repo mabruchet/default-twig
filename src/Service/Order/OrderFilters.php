@@ -47,6 +47,7 @@ final readonly class OrderFilters
     public const KEY_ITEMS_RANGE = 'items_range';
     public const KEY_COUPON = 'coupon';
     public const KEY_TRACKING = 'tracking';
+    public const KEY_PREORDER = 'preorder';
     public const KEY_SEARCH = 'search';
     public const KEY_PERIOD = 'period';
     public const KEY_CUSTOMER_ID = 'customer_id';
@@ -84,6 +85,7 @@ final readonly class OrderFilters
         public string $direction = self::DEFAULT_DIRECTION,
         public string $period = self::PERIOD_ALL,
         public array $saleUnitIds = [],
+        public ?bool $hasPreorder = null,
     ) {
     }
 
@@ -154,6 +156,7 @@ final readonly class OrderFilters
             maxItems: $maxItems,
             hasCoupon: self::parseTriState((string) $query->get('coupon', '')),
             hasTracking: self::parseTriState((string) $query->get('tracking', '')),
+            hasPreorder: self::parseTriState((string) $query->get('preorder', '')),
             search: trim((string) $query->get('q', '')),
             sort: $sort,
             direction: $direction,
@@ -177,6 +180,7 @@ final readonly class OrderFilters
             && $this->maxItems === null
             && $this->hasCoupon === null
             && $this->hasTracking === null
+            && $this->hasPreorder === null
             && $this->saleUnitIds === [];
     }
 
@@ -227,6 +231,9 @@ final readonly class OrderFilters
         }
         if ($this->hasTracking !== null) {
             $params['tracking'] = $this->hasTracking ? self::TRISTATE_WITH : self::TRISTATE_WITHOUT;
+        }
+        if ($this->hasPreorder !== null) {
+            $params['preorder'] = $this->hasPreorder ? self::TRISTATE_WITH : self::TRISTATE_WITHOUT;
         }
         if ($this->saleUnitIds !== []) {
             $params['sale_unit_ids'] = $this->saleUnitIds;
@@ -279,6 +286,7 @@ final readonly class OrderFilters
             self::KEY_ITEMS_RANGE => ['minItems' => null, 'maxItems' => null],
             self::KEY_COUPON => ['hasCoupon' => null],
             self::KEY_TRACKING => ['hasTracking' => null],
+            self::KEY_PREORDER => ['hasPreorder' => null],
             self::KEY_SEARCH => ['search' => ''],
             self::KEY_SALE_UNIT_IDS => ['saleUnitIds' => []],
             default => [],
@@ -323,6 +331,7 @@ final readonly class OrderFilters
 
         $this->applyCouponFilter($query);
         $this->applyTrackingFilter($query);
+        $this->applyPreorderFilter($query);
         $this->applyItemsRange($query);
         $this->applyAmountRange($query);
         $this->applySearch($query);
@@ -362,6 +371,22 @@ final readonly class OrderFilters
         $clause = $this->hasCoupon ? 'EXISTS' : 'NOT EXISTS';
         $query->where(
             $clause.' (SELECT 1 FROM order_coupon oc WHERE oc.order_id = '.OrderTableMap::COL_ID.')'
+        );
+    }
+
+    /**
+     * The same question as the badge of the list: an order is a preorder when at least one of
+     * its lines was sold as one.
+     */
+    private function applyPreorderFilter(OrderQuery $query): void
+    {
+        if ($this->hasPreorder === null) {
+            return;
+        }
+
+        $clause = $this->hasPreorder ? 'EXISTS' : 'NOT EXISTS';
+        $query->where(
+            $clause.' (SELECT 1 FROM order_product opp WHERE opp.order_id = '.OrderTableMap::COL_ID.' AND opp.is_preorder = 1)'
         );
     }
 
@@ -580,6 +605,7 @@ final readonly class OrderFilters
             direction: \array_key_exists('direction', $overrides) ? $overrides['direction'] : $this->direction,
             period: \array_key_exists('period', $overrides) ? $overrides['period'] : $this->period,
             saleUnitIds: \array_key_exists('saleUnitIds', $overrides) ? $overrides['saleUnitIds'] : $this->saleUnitIds,
+            hasPreorder: \array_key_exists('hasPreorder', $overrides) ? $overrides['hasPreorder'] : $this->hasPreorder,
         );
     }
 
