@@ -446,6 +446,18 @@ label.FieldInput-label {
     }
 }
 
+// An expanded choice (radios, checkboxes) is a fieldset, and form_label of
+// bo_form_theme gives it a `<legend class="col-form-label">`: the help it
+// carries takes its own line there too, instead of running on after the label.
+legend.col-form-label .bo-form-label__help {
+    display: block;
+    margin: .15rem 0 0;
+    color: var(--bs-secondary);
+    font-weight: 400;
+    font-size: .78rem;
+    letter-spacing: .005em;
+}
+
 // Symfony auto-renders the help (label_attr.help) right after the label text
 // in the same node; we normalize the spacing via a leading space + small font.
 .form-label small {
