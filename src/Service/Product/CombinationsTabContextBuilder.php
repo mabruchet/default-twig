@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Product;
 
+use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductFilterCatalog;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Exception\PropelException;
@@ -43,6 +44,7 @@ final readonly class CombinationsTabContextBuilder
         private CombinationLabeler $labeler = new CombinationLabeler(),
         private CombinationDisplayOrder $displayOrder = new CombinationDisplayOrder(),
         private StockSettings $stockSettings = new StockSettings(),
+        private ?CombinationSellableReader $sellableReader = null,
     ) {
     }
 
@@ -68,7 +70,11 @@ final readonly class CombinationsTabContextBuilder
         $rows = [];
         $hasCombinations = false;
         $taxed = $this->taxedPriceOf($product);
-        foreach ($this->displayOrder->of($product) as $pse) {
+        $combinations = $this->displayOrder->of($product);
+        // The combination of a bundle holds no stock of its own: the stock of its components decides, so no figure is shown.
+        $isBundle = BundleCore::present() && 1 === (int) $product->getIsBundle();
+        $sellable = $isBundle ? [] : ($this->sellableReader?->of($combinations) ?? []);
+        foreach ($combinations as $pse) {
             $description = $this->labeler->describe($pse, $locale);
             $hasCombinations = $hasCombinations || CombinationLabeler::DEFAULT_LABEL !== $description['label'];
 
@@ -91,6 +97,7 @@ final readonly class CombinationsTabContextBuilder
                 'price_with_tax' => $taxed($price?->getPrice()),
                 'sale_price_with_tax' => $taxed($price?->getPromoPrice()),
                 'quantity' => (float) $pse->getQuantity(),
+                'sellable' => $sellable[(int) $pse->getId()] ?? null,
                 'out_of_stock_policy' => OutOfStockPolicy::fromStored($pse->getOutOfStockPolicy())->value,
                 'preorder_limit' => $pse->getPreorderLimit(),
                 'restock_date' => $pse->getRestockDate('Y-m-d'),
