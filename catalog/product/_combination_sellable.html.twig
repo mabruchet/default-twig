@@ -1,0 +1,16 @@
+{# What a combination may still sell (its stock and what its sale mode allows below zero, less what the carts hold), under its stock field, and in a tooltip what the carts hold.
+   Nothing is added when the figures were not read. Expects: row (row.id, row.sellable: unlimited, available, reserved, cart_count, next_expiry), note_class (classes of the line). #}
+{% if row.sellable is not null %}
+    {% set sellable = row.sellable %}
+    {% if sellable.reserved > 0 %}
+        {% set held_hint = 'Held by the carts: %quantity% in %carts% cart(s), the nearest expiry is %date%.'|trans({ '%quantity%': sellable.reserved, '%carts%': sellable.cart_count, '%date%': sellable.next_expiry|date('Y-m-d H:i') }) %}
+    {% else %}
+        {% set held_hint = 'No cart holds any unit of this combination.'|trans %}
+    {% endif %}
+    <small class="d-block {{ note_class }}" data-testid="combinations-sellable-{{ row.id }}">
+        <span tabindex="0" data-bs-toggle="tooltip" title="{{ held_hint }}" data-testid="combinations-sellable-hint-{{ row.id }}">
+            {% if sellable.unlimited %}{{ 'Sellable: unlimited'|trans }}{% else %}{{ 'Sellable: %quantity%'|trans({ '%quantity%': sellable.available }) }}{% endif %}
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+        </span>
+    </small>
+{% endif %}
