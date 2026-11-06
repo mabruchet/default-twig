@@ -129,8 +129,8 @@
                 </li>
             {% endif %}
 
-            {% if is_granted('VIEW', 'admin.category') %}
-                {% set active = nav.is_section(current_path, ['/admin/catalog', '/admin/categories', '/admin/products']) %}
+            {% if is_granted('VIEW', 'admin.category') or is_granted('VIEW', 'admin.product') %}
+                {% set active = nav.is_section(current_path, ['/admin/catalog', '/admin/categories', '/admin/products', '/admin/preorders']) %}
                 {% set hookFragments = hook_block('main.top-menu-catalog', { fields: 'id,class,url,title' }) %}
                 <li class="nav-item" data-testid="bo-nav-catalog">
                     <a href="#bo-nav-catalog-collapse" data-bs-toggle="collapse" aria-expanded="{{ active ? 'true' : 'false' }}" class="nav-link bo-side-nav__toggle {{ active ? 'active' : '' }}">
@@ -139,8 +139,13 @@
                         <i class="bi bi-chevron-right ms-auto bo-side-nav__chevron" aria-hidden="true"></i>
                     </a>
                     <ul class="nav flex-column collapse {{ active ? 'show' : '' }}" id="bo-nav-catalog-collapse">
-                        <li><a class="nav-link" href="{{ path('admin.categories.default') }}">{{ 'Categories'|trans }}</a></li>
+                        {% if is_granted('VIEW', 'admin.category') %}
+                            <li><a class="nav-link" href="{{ path('admin.categories.default') }}">{{ 'Categories'|trans }}</a></li>
+                        {% endif %}
                         <li><a class="nav-link" href="{{ path('admin.products.default') }}">{{ 'Products'|trans }}</a></li>
+                        {% if is_granted('VIEW', 'admin.product') %}
+                            <li><a class="nav-link" href="{{ path('admin.preorders.list') }}" data-testid="bo-nav-catalog-preorders">{{ 'Preorder follow-up'|trans }}</a></li>
+                        {% endif %}
                         {% for fragment in hookFragments %}
                             <li><a class="nav-link" href="{{ fragment.url }}"{% if fragment.id %} id="{{ fragment.id }}"{% endif %}>{{ fragment.title }}</a></li>
                         {% endfor %}

@@ -1,0 +1,46 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Preorder follow-up'|trans }}{% endblock %}
+{% block body_testid %}preorder-tracking{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-1">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Preorder follow-up'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="preorder-tracking-page">
+        {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Preorder follow-up'|trans } %}
+        {% endembed %}
+
+        <p class="text-body-secondary small" data-testid="preorder-tracking-help">
+            {{ 'The combinations sold below zero stock. To order is the stock they lack, not the sum of the preorder lines: the first units of an order may have been served from the stock left. The own stock of the sale units is not counted.'|trans }}
+        </p>
+
+        {{ component('BoDataTable', {
+            id: 'preorders',
+            columns: [
+                column_text('ref', 'Reference'|trans),
+                column_html('product_html', 'Product'|trans),
+                column_text('to_order', 'To order'|trans, 'end'),
+                column_text('open_orders', 'Open orders'|trans, 'end'),
+                column_text('restock_date', 'Restock date'|trans),
+            ],
+            rows: rows,
+            emptyMessage: 'No combination is sold below zero stock.'|trans,
+            rowIdentifierKey: 'ref',
+        }) }}
+
+        {{ component('BoPagination', {
+            route: 'admin.preorders.list',
+            currentPage: current_page,
+            lastPage: pages,
+            ariaLabel: 'Preorder pagination',
+            testid: 'preorder-pagination',
+        }) }}
+    </div>
+{% endblock %}
