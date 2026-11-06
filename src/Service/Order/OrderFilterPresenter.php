@@ -88,6 +88,7 @@ final readonly class OrderFilterPresenter
             'items_slider' => $this->catalog->itemsBounds(),
             'coupon_value' => $this->triStateValue($filters->hasCoupon),
             'tracking_value' => $this->triStateValue($filters->hasTracking),
+            'preorder_value' => $this->triStateValue($filters->hasPreorder),
             'search_input' => $filters->search,
 
             'sort_field' => $filters->sort,
@@ -200,6 +201,17 @@ final readonly class OrderFilterPresenter
                 OrderFilters::KEY_COUPON,
                 $this->translator->trans('Coupon'),
                 $filters->hasCoupon
+                    ? $this->translator->trans('with')
+                    : $this->translator->trans('without'),
+            );
+        }
+
+        if ($filters->hasPreorder !== null) {
+            $chips[] = $this->chip(
+                $filters,
+                OrderFilters::KEY_PREORDER,
+                $this->translator->trans('Preorder'),
+                $filters->hasPreorder
                     ? $this->translator->trans('with')
                     : $this->translator->trans('without'),
             );
@@ -400,6 +412,9 @@ final readonly class OrderFilterPresenter
             ++$count;
         }
         if ($filters->hasTracking !== null) {
+            ++$count;
+        }
+        if ($filters->hasPreorder !== null) {
             ++$count;
         }
 
