@@ -44,6 +44,7 @@ use Thelia\Domain\Legal\CompanyIdentifier;
 use Thelia\Domain\Localization\VisitorCountry\VisitorCountryMode;
 use Thelia\Domain\Localization\VisitorCountry\VisitorCountrySource;
 use Thelia\Domain\Media\Video\VideoProvider;
+use Thelia\Domain\Pricing\PriceVisibility\PriceDisplayMode;
 use Thelia\Domain\Taxation\Enum\VatExemptionMode;
 
 final class ConfigStoreType extends AbstractType
@@ -219,6 +220,17 @@ final class ConfigStoreType extends AbstractType
                     $this->translator->trans('Disabled — an account is always required to order') => GuestCheckoutMode::Disabled->value,
                     $this->translator->trans('Enabled — any cart may be ordered without an account') => GuestCheckoutMode::Enabled->value,
                     $this->translator->trans('Enabled, except for products that require an account') => GuestCheckoutMode::EnabledUnlessProductForbids->value,
+                ],
+                'placeholder' => false,
+            ])
+            ->add('price_display_mode', ChoiceType::class, [
+                'constraints' => [new NotBlank()],
+                'label' => $this->translator->trans('Display of the prices'),
+                'help' => $this->translator->trans('The default of the shop: a product can override it on its own sheet. A shop that hides its prices to visitors should also review its shared cache.'),
+                'choices' => [
+                    $this->translator->trans('Visible — every visitor sees the prices and may buy') => PriceDisplayMode::Visible->value,
+                    $this->translator->trans('Identified customers only — a visitor sees no price and is asked to sign in') => PriceDisplayMode::LoggedIn->value,
+                    $this->translator->trans('On request — nobody sees a price, a price request is offered instead') => PriceDisplayMode::OnRequest->value,
                 ],
                 'placeholder' => false,
             ])

@@ -169,6 +169,13 @@
                     </div>
 
                     <div class="card mb-4">
+                        <div class="card-header">{{ 'Prices'|trans }}</div>
+                        <div class="card-body">
+                            {{ form_row(form.price_display_mode, { attr: { 'data-testid': 'config-store-price-display-mode' } }) }}
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
                         <div class="card-header">{{ 'Public pages cache'|trans }}</div>
                         <div class="card-body">
                             {{ form_row(form.shared_cache_mode, { attr: { 'data-testid': 'config-store-shared-cache-mode' } }) }}

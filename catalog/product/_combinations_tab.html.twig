@@ -704,6 +704,9 @@
         {{ include('@BackOfficeDefaultTwig/catalog/product/_group_prices.html.twig') }}
     {% endif %}
 
+    {{ render(controller('BackOfficeDefaultTwigBundle\\Controller\\Catalog\\ProductPriceDisplayController::panel', { product_id: product.id })) }}
+    {% if is_granted('VIEW', 'admin.pricing') and is_granted('VIEW', 'admin.customer') %}{{ render(controller('BackOfficeDefaultTwigBundle\\Controller\\Catalog\\ProductEffectivePriceController::panel', { product_id: product.id, currency_id: currency.id })) }}{% endif %}
+
     {% component 'BoConfirmDialog' with {
         id: 'pse-delete-modal',
         title: 'Delete combination',

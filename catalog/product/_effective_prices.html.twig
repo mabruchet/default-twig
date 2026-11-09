@@ -1,0 +1,97 @@
+{#- What a customer, or a visitor, would be charged for the combinations of the product, and why. Read only. -#}
+{% set page_query = { product_id: product_id, current_tab: 'pse', combinations_currency_id: currency.id } %}
+<div class="card mb-3" data-testid="effective-prices-section">
+    <div class="card-header">
+        <h2 class="h6 mb-1">{{ 'Effective prices'|trans }}</h2>
+        <p class="small text-muted mb-0">{{ 'What the shop charges a customer for each combination, price lists included. Prices are without taxes, in %currency%.'|trans({ '%currency%': currency.code }) }}</p>
+    </div>
+    <div class="card-body">
+        <form method="get" action="{{ path('admin.products.update') }}" class="row g-2 align-items-end" data-testid="effective-prices-search-form">
+            <input type="hidden" name="product_id" value="{{ product_id }}">
+            <input type="hidden" name="current_tab" value="pse">
+            <input type="hidden" name="combinations_currency_id" value="{{ currency.id }}">
+            <div class="col-md-6">
+                <label class="form-label" for="effective-customer-q">{{ 'Search a customer (name, e-mail or reference, 3 characters at least)'|trans }}</label>
+                <input type="search" name="effective_customer_q" id="effective-customer-q" class="form-control" value="{{ search }}" maxlength="100" autocomplete="off" data-testid="effective-prices-search">
+            </div>
+            <div class="col-md-6">
+                <button type="submit" class="btn btn-secondary">{{ 'Search'|trans }}</button>
+                <a href="{{ path('admin.products.update', page_query|merge({ effective_visitor: 1 })) }}" class="btn btn-link" data-testid="effective-prices-visitor">{{ 'See what a visitor pays'|trans }}</a>
+            </div>
+        </form>
+
+        {% if results is not empty %}
+            <ul class="list-group mt-3" data-testid="effective-prices-results">
+                {% for customer in results %}
+                    <li class="list-group-item">
+                        <a href="{{ path('admin.products.update', page_query|merge({ effective_customer_id: customer.id })) }}">{{ customer.label }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% elseif search is not empty and search|length < search_minimum %}
+            <p class="small text-muted mt-2">{{ 'Type at least %count% characters.'|trans({ '%count%': search_minimum }) }}</p>
+        {% endif %}
+
+        {% if prices is not null %}
+            <p class="mt-3 mb-2" data-testid="effective-prices-subject">
+                {% if subject == 'customer' %}
+                    <strong>{{ customer_label }}</strong>
+                {% else %}
+                    <strong>{{ 'A visitor'|trans }}</strong>
+                {% endif %}
+                - {{ 'Customer group'|trans }}: <span data-testid="effective-prices-group">{{ prices.group }}</span>
+            </p>
+            {% if prices.status != 'shown' %}
+                <div class="alert alert-warning small" role="status" data-testid="effective-prices-status" data-status="{{ prices.status }}">
+                    {% if prices.status == 'logged_in' %}
+                        {{ 'The price is hidden from this visitor: the shop shows prices to signed-in customers only. Nothing can be bought.'|trans }}
+                    {% elseif prices.status == 'on_request' %}
+                        {{ 'The price is not shown: this product is sold on request. Nothing can be bought.'|trans }}
+                    {% else %}
+                        {{ 'This product is outside the assortment of this customer: they neither see it nor buy it.'|trans }}
+                    {% endif %}
+                </div>
+            {% endif %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle" data-testid="effective-prices-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{{ 'Combination'|trans }}</th>
+                            <th class="text-end">{{ 'Catalog price'|trans }}</th>
+                            <th class="text-end">{{ 'Resolved price'|trans }}</th>
+                            <th>{{ 'Source'|trans }}</th>
+                            <th class="text-center">{{ 'Can be bought'|trans }}</th>
+                            <th>{{ 'Tiers'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in prices.rows %}
+                            <tr data-testid="effective-prices-row-{{ row.id }}">
+                                <td>
+                                    <small>{{ row.label == 'default' ? 'Default combination'|trans : row.label }}</small>
+                                    <small class="d-block text-muted">{{ row.ref }}</small>
+                                </td>
+                                <td class="text-end" data-testid="effective-prices-catalog-{{ row.id }}">
+                                    {{ row.catalog_price ?? '-' }}
+                                    {% if row.catalog_promo_price is not null %}<small class="d-block text-muted">{{ row.catalog_promo_price }}</small>{% endif %}
+                                </td>
+                                <td class="text-end" data-testid="effective-prices-price-{{ row.id }}">{{ row.price ?? '-' }}</td>
+                                <td data-testid="effective-prices-source-{{ row.id }}"><small>{{ row.source ?? '-' }}</small></td>
+                                <td class="text-center" data-testid="effective-prices-purchasable-{{ row.id }}">
+                                    {% if prices.status != 'shown' %}{{ 'No'|trans }}{% elseif row.price is null %}-{% elseif row.purchasable %}{{ 'Yes'|trans }}{% else %}{{ 'No'|trans }}{% endif %}
+                                </td>
+                                <td data-testid="effective-prices-tiers-{{ row.id }}">
+                                    {% for tier in row.tiers %}
+                                        <small class="d-block">{{ tier.quantity }}+ : {{ tier.price }}</small>
+                                    {% else %}
+                                        <small class="text-muted">-</small>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>

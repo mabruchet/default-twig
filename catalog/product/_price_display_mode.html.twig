@@ -1,0 +1,38 @@
+{#- How the prices of the product show: like the shop (an empty override) or one of the three modes. -#}
+{% set mode_labels = {
+    visible: 'Visible - every visitor sees the prices and may buy',
+    logged_in: 'Identified customers only - a visitor sees no price',
+    on_request: 'On request - nobody sees a price, a price request is offered',
+} %}
+<div class="card mb-3" data-testid="price-display-mode-section">
+    <div class="card-header">
+        <h2 class="h6 mb-1">{{ 'Display of the prices'|trans }}</h2>
+        <p class="small text-muted mb-0">
+            {{ 'The shop default is:'|trans }} <strong data-testid="price-display-mode-shop">{{ mode_labels[shop_mode]|trans }}</strong>
+        </p>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{{ path('admin.product.price-display-mode.save') }}" data-testid="price-display-mode-form">
+            <input type="hidden" name="_token" value="{{ assignToken() }}">
+            <input type="hidden" name="product_id" value="{{ product_id }}">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label" for="product-price-display-mode">{{ 'Display for this product'|trans }}</label>
+                    <select name="price_display_mode" id="product-price-display-mode" class="form-select" {% if not can_edit %}disabled{% endif %} data-testid="price-display-mode-select">
+                        <option value="" {% if override is null %}selected{% endif %}>{{ 'Like the shop'|trans }}</option>
+                        {% for mode in modes %}
+                            <option value="{{ mode }}" {% if override == mode %}selected{% endif %}>{{ mode_labels[mode]|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if can_edit %}
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary" data-testid="price-display-mode-submit">
+                            <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>

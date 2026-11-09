@@ -1,0 +1,168 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'New assortment rule'|trans }}{% endblock %}
+{% block body_testid %}catalog-restriction-new{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.pricing.catalog_restriction.list') }}">{{ 'Assortments'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'New assortment rule'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="catalog-restriction-new-page">
+        <h1 class="h3 mb-3">{{ 'New assortment rule'|trans }}</h1>
+
+        <form method="get" action="{{ path('admin.pricing.catalog_restriction.new') }}" data-testid="catalog-restriction-draft-form">
+            <div class="card mb-3">
+                <div class="card-header">{{ 'Who the rule applies to'|trans }}</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="scope_type" id="scope-group" value="group" {% if draft.scopeType == 'group' %}checked{% endif %}>
+                            <label class="form-check-label" for="scope-group">{{ 'Customer groups'|trans }}</label>
+                        </div>
+                        {% if can_pick_customers %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="scope_type" id="scope-customer" value="customer" {% if draft.scopeType == 'customer' %}checked{% endif %}>
+                            <label class="form-check-label" for="scope-customer">{{ 'A customer'|trans }}</label>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="draft-group-ids">{{ 'Customer groups (one rule per group)'|trans }}</label>
+                        <select name="group_ids[]" id="draft-group-ids" class="form-select" multiple size="{{ min(max(groups|length, 2), 6) }}" data-testid="catalog-restriction-groups">
+                            {% for group in groups %}
+                                <option value="{{ group.id }}" {% if group.id in draft.groupIds %}selected{% endif %}>{{ group.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {% if can_pick_customers %}
+                    <div class="mb-2">
+                        <label class="form-label" for="draft-customer-q">{{ 'Search a customer (name, e-mail or reference, 3 characters at least)'|trans }}</label>
+                        <input type="search" name="customer_q" id="draft-customer-q" class="form-control" value="{{ draft.customerSearch }}" maxlength="100" autocomplete="off" data-testid="catalog-restriction-customer-search">
+                    </div>
+                    {% if draft.customerId is not null %}
+                        <input type="hidden" name="customer_id" value="{{ draft.customerId }}">
+                        <p class="small mb-0" data-testid="catalog-restriction-customer-picked">{{ 'Chosen customer'|trans }}: <strong>{{ customer_label ?? ('#' ~ draft.customerId) }}</strong></p>
+                    {% endif %}
+                    {% if customer_results is not empty %}
+                        <ul class="list-group mt-2" data-testid="catalog-restriction-customer-results">
+                            {% for customer in customer_results %}
+                                <li class="list-group-item">
+                                    <a href="{{ path('admin.pricing.catalog_restriction.new', draft.toQuery({ scope_type: 'customer', customer_id: customer.id })) }}">{{ customer.label }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% elseif draft.customerSearch is not empty and draft.customerSearch|length < search_minimum %}
+                        <p class="small text-muted mt-2">{{ 'Type at least %count% characters.'|trans({ '%count%': search_minimum }) }}</p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">{{ 'What the rule is about'|trans }}</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        {% for type, label in { category: 'A category and its sub-categories'|trans, brand: 'A brand'|trans, product: 'A product'|trans } %}
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="target_type" id="target-{{ type }}" value="{{ type }}" {% if draft.targetType == type %}checked{% endif %}>
+                                <label class="form-check-label" for="target-{{ type }}">{{ label }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="draft-category-id">{{ 'Category'|trans }}</label>
+                        <select name="category_id" id="draft-category-id" class="form-select" data-testid="catalog-restriction-category">
+                            <option value="">-</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" {% if category.id == draft.categoryId %}selected{% endif %}>{{ category.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="draft-brand-id">{{ 'Brand'|trans }}</label>
+                        <select name="brand_id" id="draft-brand-id" class="form-select" data-testid="catalog-restriction-brand">
+                            <option value="">-</option>
+                            {% for brand in brands %}
+                                <option value="{{ brand.id }}" {% if brand.id == draft.brandId %}selected{% endif %}>{{ brand.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="draft-product-q">{{ 'Search a product (reference or title, 3 characters at least)'|trans }}</label>
+                        <input type="search" name="product_q" id="draft-product-q" class="form-control" value="{{ draft.productSearch }}" maxlength="100" autocomplete="off" data-testid="catalog-restriction-product-search">
+                    </div>
+                    {% if draft.productId is not null %}
+                        <input type="hidden" name="product_id" value="{{ draft.productId }}">
+                        <p class="small mb-0" data-testid="catalog-restriction-product-picked">{{ 'Chosen product'|trans }}: <strong>{{ product_label ?? ('#' ~ draft.productId) }}</strong></p>
+                    {% endif %}
+                    {% if product_results is not empty %}
+                        <ul class="list-group mt-2" data-testid="catalog-restriction-product-results">
+                            {% for product in product_results %}
+                                <li class="list-group-item">
+                                    <a href="{{ path('admin.pricing.catalog_restriction.new', draft.toQuery({ target_type: 'product', product_id: product.id })) }}">{{ product.label }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% elseif draft.productSearch is not empty and draft.productSearch|length < search_minimum %}
+                        <p class="small text-muted mt-2">{{ 'Type at least %count% characters.'|trans({ '%count%': search_minimum }) }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">{{ 'Which way'|trans }}</div>
+                <div class="card-body">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mode" id="mode-deny" value="deny" {% if draft.mode == 'deny' %}checked{% endif %}>
+                        <label class="form-check-label" for="mode-deny">{{ 'Deny: the target is closed, whatever an allow rule says'|trans }}</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mode" id="mode-allow" value="allow" {% if draft.mode == 'allow' %}checked{% endif %}>
+                        <label class="form-check-label" for="mode-allow">{{ 'Allow: the target is open, and whatever no allow rule opens is closed'|trans }}</label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-secondary" data-testid="catalog-restriction-draft-submit">{{ 'Update the summary'|trans }}</button>
+            <a href="{{ path('admin.pricing.catalog_restriction.list') }}" class="btn btn-link">{{ 'Back to the list'|trans }}</a>
+        </form>
+
+        {% if complete %}
+            <div class="card mt-4 border-primary" data-testid="catalog-restriction-summary">
+                <div class="card-header">{{ 'The rule to create'|trans }}</div>
+                <div class="card-body">
+                    <p>
+                        <span class="badge text-bg-{{ draft.mode == 'allow' ? 'success' : 'danger' }}">{{ (draft.mode == 'allow' ? 'Allow' : 'Deny')|trans }}</span>
+                        <strong>{{ target_label }}</strong>
+                        {{ 'for'|trans }}
+                        <strong>{{ scope_label }}</strong>
+                    </p>
+                    <form method="post" action="{{ path('admin.pricing.catalog_restriction.create') }}" data-testid="catalog-restriction-create-form">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <input type="hidden" name="scope_type" value="{{ draft.scopeType }}">
+                        {% for groupId in draft.groupIds %}<input type="hidden" name="group_ids[]" value="{{ groupId }}">{% endfor %}
+                        {% if draft.customerId is not null %}<input type="hidden" name="customer_id" value="{{ draft.customerId }}">{% endif %}
+                        <input type="hidden" name="target_type" value="{{ draft.targetType }}">
+                        {% if draft.categoryId is not null %}<input type="hidden" name="category_id" value="{{ draft.categoryId }}">{% endif %}
+                        {% if draft.brandId is not null %}<input type="hidden" name="brand_id" value="{{ draft.brandId }}">{% endif %}
+                        {% if draft.productId is not null %}<input type="hidden" name="product_id" value="{{ draft.productId }}">{% endif %}
+                        <input type="hidden" name="mode" value="{{ draft.mode }}">
+                        <button type="submit" class="btn btn-primary" data-testid="catalog-restriction-create-submit">
+                            <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Create the rule'|trans }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
