@@ -1,0 +1,101 @@
+<div data-testid="price-list-assignments">
+    <div class="card mb-3">
+        <div class="card-header"><h2 class="h5 mb-0">{{ 'Customer groups'|trans }}</h2></div>
+        <div class="card-body">
+            <form method="post" action="{{ path('admin.pricing.price_list.assignment_groups', { price_list_id: price_list.id }) }}" data-testid="price-list-groups-form">
+                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                <div data-controller="bo-multiselect-search">
+                    <label class="form-label" for="price-list-groups">{{ 'Groups the list is assigned to'|trans }}</label>
+                    <input type="search" class="form-control mb-2" placeholder="{{ 'Filter…'|trans }}"
+                           data-bo-multiselect-search-target="input"
+                           data-action="input->bo-multiselect-search#filter">
+                    <select id="price-list-groups" name="group_ids[]" multiple size="8" class="form-select" data-bo-multiselect-search-target="select" data-testid="price-list-groups"{% if not can_update %} disabled{% endif %}>
+                        {% for choice in group_choices %}
+                            <option value="{{ choice.id }}"{% if choice.id in assigned_group_ids %} selected{% endif %}>{{ choice.label }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">{{ 'Every customer of a selected group gets the list. Ctrl/Cmd+click to select several.'|trans }}</div>
+                </div>
+                {% if can_update %}
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" class="btn btn-primary" data-testid="price-list-groups-submit"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save the groups'|trans }}</button>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2 class="h5 mb-0">{{ 'Customers'|trans }}</h2></div>
+        <div class="card-body">
+            <p class="text-body-secondary small" data-testid="price-list-customers-total">{{ '%count% customer(s) assigned'|trans({'%count%': assigned_customers_total}) }}</p>
+            <ul class="list-group mb-3" data-testid="price-list-customers">
+                {% for assigned in assigned_customers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center" data-testid="price-list-customer-{{ assigned.customerId }}">
+                        {% if can_pick_customers %}
+                            <span>{{ assigned.name }} <span class="text-muted">&lt;{{ assigned.email }}&gt;</span></span>
+                        {% else %}
+                            <span>{{ 'Customer #%id%'|trans({'%id%': assigned.customerId}) }}</span>
+                        {% endif %}
+                        {% if can_update %}
+                            <form method="post" action="{{ path('admin.pricing.price_list.assignment_delete', { price_list_id: price_list.id, assignment_id: assigned.assignmentId }) }}" class="m-0">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" data-testid="price-list-customer-remove-{{ assigned.customerId }}">{{ 'Remove'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    </li>
+                {% else %}
+                    <li class="list-group-item text-muted">{{ 'No customer is assigned to this list directly.'|trans }}</li>
+                {% endfor %}
+            </ul>
+            {% if assigned_last_page > 1 %}
+                {{ component('BoPagination', {
+                    route: 'admin.pricing.price_list.view',
+                    currentPage: assigned_page,
+                    lastPage: assigned_last_page,
+                    pageParam: 'assigned_page',
+                    routeParams: { price_list_id: price_list.id, tab: 'assignments' },
+                    ariaLabel: 'Assigned customers pagination'|trans,
+                    testid: 'price-list-customers-pagination',
+                }) }}
+            {% endif %}
+
+            {% if can_pick_customers %}
+            <form method="get" action="{{ path('admin.pricing.price_list.view', { price_list_id: price_list.id }) }}" class="row g-2 align-items-end" data-testid="price-list-customer-search">
+                <input type="hidden" name="tab" value="assignments">
+                <div class="col-md-8">
+                    <label class="form-label" for="price-list-customer-search">{{ 'Find a customer (name, e-mail or reference)'|trans }}</label>
+                    <input type="search" id="price-list-customer-search" name="customer_search" class="form-control" value="{{ customer_search }}" minlength="{{ customer_search_minimum }}" autocomplete="off">
+                    <div class="form-text">{{ '%minimum% characters at least, %limit% results at most.'|trans({'%minimum%': customer_search_minimum, '%limit%': customer_search_limit}) }}</div>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-outline-primary w-100">{{ 'Search'|trans }}</button>
+                </div>
+            </form>
+
+            {% if customer_search_too_short %}
+                <p class="text-warning mt-2" data-testid="price-list-customer-search-short">{{ 'Type at least %minimum% characters.'|trans({'%minimum%': customer_search_minimum}) }}</p>
+            {% elseif customer_search != '' %}
+                <ul class="list-group mt-3" data-testid="price-list-customer-results">
+                    {% for found in customer_results %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center" data-testid="price-list-customer-result-{{ found.customerId }}">
+                            <span>{{ found.name }} <span class="text-muted">&lt;{{ found.email }}&gt;</span></span>
+                            {% if can_update %}
+                                <form method="post" action="{{ path('admin.pricing.price_list.assignment_customer_add', { price_list_id: price_list.id }) }}" class="m-0">
+                                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                    <input type="hidden" name="customer_id" value="{{ found.customerId }}">
+                                    <button type="submit" class="btn btn-sm btn-primary" data-testid="price-list-customer-add-{{ found.customerId }}">{{ 'Assign'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </li>
+                    {% else %}
+                        <li class="list-group-item text-muted">{{ 'No customer matches.'|trans }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% else %}
+                <p class="text-muted small" data-testid="price-list-customers-hidden">{{ 'The customers are listed and searched only for administrators who may view them.'|trans }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>

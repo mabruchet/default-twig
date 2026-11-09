@@ -1,0 +1,138 @@
+<div data-testid="price-list-lines">
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+        <form method="get" action="{{ path('admin.pricing.price_list.view', { price_list_id: price_list.id }) }}" class="row g-2" data-testid="price-list-lines-search">
+            <input type="hidden" name="tab" value="lines">
+            <div class="col-auto">
+                <label class="form-label" for="price-list-lines-q">{{ 'Reference of the combination or of the product'|trans }}</label>
+                <input type="search" name="q" id="price-list-lines-q" class="form-control" value="{{ search }}">
+            </div>
+            <div class="col-auto d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary">{{ 'Search'|trans }}</button>
+            </div>
+        </form>
+        <div class="d-flex flex-wrap gap-2">
+            {% if is_granted('VIEW', 'admin.pricing') %}
+                <a href="{{ path('admin.pricing.price_list.csv_export', { price_list_id: price_list.id }) }}" class="btn btn-outline-secondary" data-testid="price-list-export"><i class="bi bi-download" aria-hidden="true"></i> {{ 'Export CSV'|trans }}</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <p class="text-body-secondary small" data-testid="price-list-lines-total">{{ '%count% line(s)'|trans({'%count%': lines_total}) }}</p>
+
+    <div class="table-responsive">
+        <table class="table table-sm align-middle" data-testid="price-list-lines-table">
+            <thead>
+                <tr>
+                    <th>{{ 'Combination'|trans }}</th>
+                    <th>{{ 'Product'|trans }}</th>
+                    <th class="text-end">{{ 'Minimum quantity'|trans }}</th>
+                    <th class="text-end">{{ 'Price (excl. taxes)'|trans }}</th>
+                    <th class="text-end">{{ 'Discount (%)'|trans }}</th>
+                    <th class="text-end">{{ 'Actions'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr data-testid="price-list-line-{{ line.id }}">
+                        {% if can_update %}
+                            {% set form_id = 'price-list-line-form-' ~ line.id %}
+                            <td><code>{{ line.saleElementReference }}</code></td>
+                            <td>{{ line.productReference }}{% if line.productTitle %} - {{ line.productTitle }}{% endif %}</td>
+                            <td class="text-end"><input form="{{ form_id }}" type="number" min="1" step="1" name="min_quantity" value="{{ line.minQuantity }}" class="form-control form-control-sm text-end" aria-label="{{ 'Minimum quantity'|trans }}"></td>
+                            <td class="text-end"><input form="{{ form_id }}" type="text" inputmode="decimal" name="price" value="{{ line.price }}" class="form-control form-control-sm text-end" aria-label="{{ 'Price (excl. taxes)'|trans }}"></td>
+                            <td class="text-end"><input form="{{ form_id }}" type="text" inputmode="decimal" name="discount_percent" value="{{ line.discountPercent }}" class="form-control form-control-sm text-end" aria-label="{{ 'Discount (%)'|trans }}"></td>
+                            <td class="text-end text-nowrap">
+                                <form id="{{ form_id }}" method="post" action="{{ path('admin.pricing.price_list.line_update', { price_list_id: price_list.id, item_id: line.id }) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                    <input type="hidden" name="q" value="{{ search }}">
+                                    <input type="hidden" name="page" value="{{ current_page }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" data-testid="price-list-line-save-{{ line.id }}">{{ 'Save'|trans }}</button>
+                                </form>
+                                {% if can_delete %}
+                                    <form method="post" action="{{ path('admin.pricing.price_list.line_delete', { price_list_id: price_list.id, item_id: line.id }) }}" class="d-inline">
+                                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                        <input type="hidden" name="q" value="{{ search }}">
+                                        <input type="hidden" name="page" value="{{ current_page }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" data-testid="price-list-line-delete-{{ line.id }}">{{ 'Delete'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        {% else %}
+                            <td><code>{{ line.saleElementReference }}</code></td>
+                            <td>{{ line.productReference }}{% if line.productTitle %} - {{ line.productTitle }}{% endif %}</td>
+                            <td class="text-end">{{ line.minQuantity }}</td>
+                            <td class="text-end">{{ line.price }}</td>
+                            <td class="text-end">{{ line.discountPercent }}</td>
+                            <td></td>
+                        {% endif %}
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="text-muted text-center py-3">{{ 'No line matches.'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if last_page > 1 %}
+        {{ component('BoPagination', {
+            route: 'admin.pricing.price_list.view',
+            currentPage: current_page,
+            lastPage: last_page,
+            routeParams: { price_list_id: price_list.id, tab: 'lines', q: search ?: null },
+            ariaLabel: 'Price list lines pagination'|trans,
+            testid: 'price-list-lines-pagination',
+        }) }}
+    {% endif %}
+
+    {% if can_create %}
+        <div class="card mt-3" data-testid="price-list-line-add">
+            <div class="card-header"><h2 class="h5 mb-0">{{ 'Add a line'|trans }}</h2></div>
+            <div class="card-body">
+                <form method="post" action="{{ path('admin.pricing.price_list.line_add', { price_list_id: price_list.id }) }}" class="row g-2 align-items-end" data-testid="price-list-line-add-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <input type="hidden" name="q" value="{{ search }}">
+                    <div class="col-md-4">
+                        <label class="form-label" for="price-list-line-add-ref">{{ 'Reference of the combination'|trans }}</label>
+                        <input type="text" id="price-list-line-add-ref" name="pse_ref" class="form-control" required autocomplete="off">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="price-list-line-add-quantity">{{ 'Minimum quantity'|trans }}</label>
+                        <input type="number" min="1" step="1" id="price-list-line-add-quantity" name="min_quantity" value="1" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="price-list-line-add-price">{{ 'Price (excl. taxes)'|trans }}</label>
+                        <input type="text" inputmode="decimal" id="price-list-line-add-price" name="price" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="price-list-line-add-discount">{{ 'Discount (%)'|trans }}</label>
+                        <input type="text" inputmode="decimal" id="price-list-line-add-discount" name="discount_percent" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100" data-testid="price-list-line-add-submit"><i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add'|trans }}</button>
+                    </div>
+                </form>
+                <div class="form-text">{{ 'A line is a price or a discount percentage of the catalogue price, never both. The line with the greatest minimum quantity not above the quantity ordered wins.'|trans }}</div>
+            </div>
+        </div>
+
+    {% endif %}
+
+    {% if can_update and can_create %}
+        <div class="card mt-3" data-testid="price-list-import">
+            <div class="card-header"><h2 class="h5 mb-0">{{ 'Import lines from a CSV file'|trans }}</h2></div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" action="{{ path('admin.pricing.price_list.csv_upload', { price_list_id: price_list.id }) }}" class="row g-2 align-items-end" data-testid="price-list-import-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <div class="col-md-8">
+                        <label class="form-label" for="price-list-import-file">{{ 'CSV file (5 MB at most)'|trans }}</label>
+                        <input type="file" id="price-list-import-file" name="file" accept=".csv,.txt,text/csv" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-outline-primary w-100" data-testid="price-list-import-submit"><i class="bi bi-upload" aria-hidden="true"></i> {{ 'Preview the import'|trans }}</button>
+                    </div>
+                </form>
+                <div class="form-text">{{ 'Columns: pse_ref (or pse_id), min_quantity, price or discount_percent. Nothing is written until you confirm the preview.'|trans }}</div>
+            </div>
+        </div>
+    {% endif %}
+</div>

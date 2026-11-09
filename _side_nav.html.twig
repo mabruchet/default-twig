@@ -153,6 +153,21 @@
                 </li>
             {% endif %}
 
+            {% if is_granted('VIEW', 'admin.pricing') %}
+                {% set active = nav.is_section(current_path, ['/admin/pricing']) %}
+                <li class="nav-item" data-testid="bo-nav-pricing">
+                    <a href="#bo-nav-pricing-collapse" data-bs-toggle="collapse" aria-expanded="{{ active ? 'true' : 'false' }}" class="nav-link bo-side-nav__toggle {{ active ? 'active' : '' }}">
+                        <i class="bi bi-tags me-2" aria-hidden="true"></i>
+                        {{ 'Prices and assortments'|trans }}
+                        <i class="bi bi-chevron-right ms-auto bo-side-nav__chevron" aria-hidden="true"></i>
+                    </a>
+                    <ul class="nav flex-column collapse {{ active ? 'show' : '' }}" id="bo-nav-pricing-collapse">
+                        <li><a class="nav-link" href="{{ path('admin.pricing.price_list.list') }}" data-testid="bo-nav-pricing-price-lists">{{ 'Price lists'|trans }}</a></li>
+                        <li><a class="nav-link" href="{{ path('admin.pricing.catalog_restriction.list') }}" data-testid="bo-nav-pricing-catalog-restrictions">{{ 'Assortments'|trans }}</a></li>
+                    </ul>
+                </li>
+            {% endif %}
+
             {% if is_granted('VIEW', 'admin.folder') and backoffice_section_visible('folder') %}
                 {% set active = nav.is_section(current_path, ['/admin/folder', '/admin/content']) %}
                 {% set hookFragments = hook_block('main.top-menu-content', { fields: 'id,class,url,title' }) %}

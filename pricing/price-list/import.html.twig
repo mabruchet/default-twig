@@ -1,0 +1,68 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Import lines'|trans }} - {{ price_list.code }}{% endblock %}
+{% block body_testid %}pricing-price-list-import{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.pricing.price_list.list') }}">{{ 'Price lists'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.pricing.price_list.view', { price_list_id: price_list.id, tab: 'lines' }) }}">{{ price_list.code }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Import lines'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="price-list-import-page">
+        <h1 class="h3 mb-3">
+            {% if report.applied %}{{ 'Import report'|trans }}{% else %}{{ 'Import preview'|trans }}{% endif %}
+            <small class="text-muted"><code>{{ price_list.code }}</code></small>
+        </h1>
+
+        {% if not report.applied %}
+            <div class="alert alert-info" role="alert" data-testid="price-list-import-notice">{{ 'Nothing has been written yet. Check the figures below, then confirm or abandon the import.'|trans }}</div>
+        {% endif %}
+
+        <div class="row g-3 mb-3" data-testid="price-list-import-counters">
+            <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-muted small">{% if report.applied %}{{ 'Lines created'|trans }}{% else %}{{ 'Lines to create'|trans }}{% endif %}</div><div class="h3 mb-0" data-testid="price-list-import-created">{{ report.created }}</div></div></div></div>
+            <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-muted small">{% if report.applied %}{{ 'Lines updated'|trans }}{% else %}{{ 'Lines to update'|trans }}{% endif %}</div><div class="h3 mb-0" data-testid="price-list-import-updated">{{ report.updated }}</div></div></div></div>
+            <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-muted small">{{ 'Lines refused'|trans }}</div><div class="h3 mb-0" data-testid="price-list-import-errors">{{ report.errorCount }}</div></div></div></div>
+        </div>
+
+        {% if report.errorCount > 0 %}
+            <div class="card mb-3">
+                <div class="card-header"><h2 class="h5 mb-0">{{ 'Lines refused'|trans }}</h2></div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0" data-testid="price-list-import-error-table">
+                        <thead><tr><th>{{ 'Line of the file'|trans }}</th><th>{{ 'Reason'|trans }}</th></tr></thead>
+                        <tbody>
+                            {% for error in report.errors %}
+                                <tr data-testid="price-list-import-error-{{ error.line }}"><td>{{ error.line }}</td><td>{{ error.reason }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if report.hidden > 0 %}
+                    <div class="card-footer text-muted small">{{ '%count% more line(s) are not listed.'|trans({'%count%': report.hidden}) }}</div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="d-flex flex-wrap gap-2">
+            {% if file_token %}
+                <form method="post" action="{{ path('admin.pricing.price_list.csv_confirm', { price_list_id: price_list.id, file_token: file_token }) }}" class="m-0" data-testid="price-list-import-confirm-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <button type="submit" class="btn btn-primary" data-testid="price-list-import-confirm"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Confirm the import'|trans }}</button>
+                </form>
+                <form method="post" action="{{ path('admin.pricing.price_list.csv_abandon', { price_list_id: price_list.id, file_token: file_token }) }}" class="m-0" data-testid="price-list-import-abandon-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <button type="submit" class="btn btn-outline-secondary" data-testid="price-list-import-abandon">{{ 'Abandon'|trans }}</button>
+                </form>
+            {% else %}
+                <a href="{{ path('admin.pricing.price_list.view', { price_list_id: price_list.id, tab: 'lines' }) }}" class="btn btn-primary" data-testid="price-list-import-back">{{ 'Back to the lines'|trans }}</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

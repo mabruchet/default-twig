@@ -1,0 +1,106 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Price list'|trans }} - {{ price_list.title|default(price_list.code) }}{% endblock %}
+{% block body_testid %}pricing-price-list-view{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.pricing.price_list.list') }}">{{ 'Price lists'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ price_list.title|default(price_list.code) }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {% set can_update = can_write and is_granted('UPDATE', 'admin.pricing') %}
+    {% set can_create = can_write and is_granted('CREATE', 'admin.pricing') %}
+    {% set can_delete = can_write and is_granted('DELETE', 'admin.pricing') %}
+
+    <div class="container-fluid" data-testid="price-list-page">
+        <h1 class="h3 mb-2">{{ 'Price list'|trans }} <small class="text-muted"><code>{{ price_list.code }}</code> - #{{ price_list.id }}</small></h1>
+        <p class="text-muted small mb-3" data-testid="price-list-summary">
+            {{ currency_code }} - {{ 'Priority'|trans }} {{ price_list.priority }}{% if price_list.exclusive %} - {{ 'Exclusive'|trans }}{% endif %}{% if not price_list.active %} - {{ 'Inactive'|trans }}{% endif %}
+            - {{ '%count% line(s)'|trans({'%count%': line_count}) }}
+        </p>
+
+        <ul class="nav nav-tabs mb-3" data-testid="price-list-tabs">
+            {% for name, label in { settings: 'Settings'|trans, lines: 'Lines'|trans, assignments: 'Assignments'|trans } %}
+                <li class="nav-item">
+                    <a class="nav-link{{ tab == name ? ' active' : '' }}" href="{{ path('admin.pricing.price_list.view', { price_list_id: price_list.id, tab: name }) }}"{% if tab == name %} aria-current="page"{% endif %} data-testid="price-list-tab-{{ name }}">{{ label }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if tab == 'settings' %}
+            {% form_theme form with bo_form_themes only %}
+            <div class="mb-3">
+                {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    {{ form_start(form, { action: path('admin.pricing.price_list.save', { price_list_id: price_list.id }), method: 'post', attr: { 'data-testid': 'price-list-edit-form' } }) }}
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                {{ form_label(form.code) }}
+                                {{ form_widget(form.code, { attr: { class: 'form-control' } }) }}
+                                <div class="form-text">{{ 'A deployment or an API caller may refer to the list by its code: change it with them.'|trans }}</div>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form_label(form.title) }}
+                                {{ form_widget(form.title, { attr: { class: 'form-control' } }) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form_label(form.currency_id) }}
+                                {{ form_widget(form.currency_id, { attr: { class: 'form-select' } }) }}
+                                <div class="form-text">{{ 'The prices of the lines are amounts in this currency: it cannot change once the list has lines.'|trans }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form_label(form.priority) }}
+                                {{ form_widget(form.priority, { attr: { class: 'form-control' } }) }}
+                                <div class="form-text">{{ 'The smallest number is looked up first. A tie goes to the list assigned to the customer, then to the oldest list.'|trans }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    {{ form_widget(form.exclusive, { attr: { class: 'form-check-input' } }) }}
+                                    {{ form_label(form.exclusive, null, { label_attr: { class: 'form-check-label' } }) }}
+                                </div>
+                                <div class="form-check form-switch mt-2">
+                                    {{ form_widget(form.active, { attr: { class: 'form-check-input' } }) }}
+                                    {{ form_label(form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+                                </div>
+                                <div class="form-text">{{ 'Exclusive: what the list does not price cannot be bought by its customers, unless a list of higher rank prices it. A list turned off applies to nobody.'|trans }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_label(form.starts_at) }}
+                                {{ form_widget(form.starts_at, { attr: { class: 'form-control' } }) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_label(form.ends_at) }}
+                                {{ form_widget(form.ends_at, { attr: { class: 'form-control' } }) }}
+                            </div>
+                        </div>
+                        {{ form_widget(form.id) }}
+                        {{ form_widget(form.locale) }}
+                        {% if form._token is defined %}{{ form_widget(form._token) }}{% endif %}
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <a href="{{ path('admin.pricing.price_list.list') }}" class="btn btn-outline-secondary">{{ 'Back'|trans }}</a>
+                            {% if can_update %}
+                                <button type="submit" class="btn btn-primary" data-testid="price-list-edit-submit"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}</button>
+                            {% endif %}
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if tab == 'lines' %}
+            {{ include('@BackOfficeDefaultTwig/pricing/price-list/_lines.html.twig') }}
+        {% endif %}
+
+        {% if tab == 'assignments' %}
+            {{ include('@BackOfficeDefaultTwig/pricing/price-list/_assignments.html.twig') }}
+        {% endif %}
+    </div>
+{% endblock %}

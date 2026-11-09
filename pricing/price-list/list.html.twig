@@ -1,0 +1,163 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Price lists'|trans }}{% endblock %}
+{% block body_testid %}pricing-price-lists{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Price lists'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="price-lists-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Price lists'|trans }}</h1>
+            {% if can_write and is_granted('CREATE', 'admin.pricing') %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#price-list-create-modal" data-testid="price-list-create-button">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a price list'|trans }}
+                </button>
+            {% endif %}
+        </div>
+
+        <p class="text-muted">
+            {{ 'A price list gives its customers negotiated prices. The lists are looked up by priority, the smallest first; the first list that has a line for a combination and a quantity sets the price.'|trans }}
+        </p>
+
+        <form method="get" action="{{ path('admin.pricing.price_list.list') }}" class="row g-2 mb-3" data-testid="price-lists-filters">
+            <div class="col-md-4">
+                <label class="form-label" for="price-list-filter-q">{{ 'Code or title'|trans }}</label>
+                <input type="search" name="q" id="price-list-filter-q" class="form-control" value="{{ filters.q }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="price-list-filter-currency">{{ 'Currency'|trans }}</label>
+                <select name="currency" id="price-list-filter-currency" class="form-select">
+                    <option value="">{{ 'All'|trans }}</option>
+                    {% for id, code in currencies %}
+                        <option value="{{ id }}"{% if id == filters.currency %} selected{% endif %}>{{ code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="price-list-filter-active">{{ 'Active'|trans }}</label>
+                <select name="active" id="price-list-filter-active" class="form-select">
+                    <option value="">{{ 'All'|trans }}</option>
+                    <option value="1"{% if filters.active is same as(true) %} selected{% endif %}>{{ 'Yes'|trans }}</option>
+                    <option value="0"{% if filters.active is same as(false) %} selected{% endif %}>{{ 'No'|trans }}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="price-list-filter-exclusive">{{ 'Exclusive'|trans }}</label>
+                <select name="exclusive" id="price-list-filter-exclusive" class="form-select">
+                    <option value="">{{ 'All'|trans }}</option>
+                    <option value="1"{% if filters.exclusive is same as(true) %} selected{% endif %}>{{ 'Yes'|trans }}</option>
+                    <option value="0"{% if filters.exclusive is same as(false) %} selected{% endif %}>{{ 'No'|trans }}</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary w-100">{{ 'Filter'|trans }}</button>
+            </div>
+        </form>
+
+        <p class="text-body-secondary small" data-testid="price-lists-total">{{ '%count% price list(s)'|trans({'%count%': total}) }}</p>
+
+        {{ component('BoDataTable', {
+            id: 'price-lists',
+            columns: [
+                column('id', 'ID'|trans, 'start', 'id', hideBelow: 'md'),
+                column('code', 'Code'|trans, 'start', 'code'),
+                column('title', 'Title'|trans, 'start', 'title', hideBelow: 'md'),
+                column('currency', 'Currency'|trans, 'center'),
+                column('priority', 'Priority'|trans, 'end', 'priority'),
+                column('exclusive', 'Exclusive'|trans, 'center', hideBelow: 'lg'),
+                column('period', 'Period'|trans, 'start', hideBelow: 'xl'),
+                column_badge('active', 'Active'|trans, { active: 'success', inactive: 'secondary' }, 'center', 'active_label'),
+                column('lines', 'Lines'|trans, 'end'),
+                column_actions('_actions', 'Actions'|trans),
+            ],
+            rows: rows,
+            emptyMessage: 'No price list matches.'|trans,
+            sortField: sort_field,
+            sortDirection: sort_direction,
+        }) }}
+
+        {% if last_page > 1 %}
+            {{ component('BoPagination', {
+                route: 'admin.pricing.price_list.list',
+                currentPage: current_page,
+                lastPage: last_page,
+                routeParams: { q: filters.q ?: null, currency: filters.currency ?: null, active: filters.active is same as(true) ? 1 : (filters.active is same as(false) ? 0 : null), exclusive: filters.exclusive is same as(true) ? 1 : (filters.exclusive is same as(false) ? 0 : null), order: sort_field, direction: sort_direction },
+                ariaLabel: 'Price lists pagination'|trans,
+                testid: 'price-lists-pagination',
+            }) }}
+        {% endif %}
+    </div>
+
+    {% if can_write %}
+    {% component 'BoCreateDialog' with {
+        id: 'price-list-create-modal',
+        title: 'Create a new price list',
+        form: create_form,
+        formAction: path('admin.pricing.price_list.create'),
+        submitLabel: 'Create',
+        testid: 'price-list-create',
+        size: '',
+    } %}
+        {% block fields %}
+            <div class="mb-3">
+                {{ form_label(create_form.code) }}
+                {{ form_widget(create_form.code, { attr: { class: 'form-control' } }) }}
+                <div class="form-text">{{ 'The name a deployment or an API caller refers to the list by. Letters, digits, dots, dashes and underscores.'|trans }}</div>
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.title) }}
+                {{ form_widget(create_form.title, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    {{ form_label(create_form.currency_id) }}
+                    {{ form_widget(create_form.currency_id, { attr: { class: 'form-select' } }) }}
+                    <div class="form-text">{{ 'The prices of the lines are amounts in this currency.'|trans }}</div>
+                </div>
+                <div class="col-md-6">
+                    {{ form_label(create_form.priority) }}
+                    {{ form_widget(create_form.priority, { attr: { class: 'form-control' } }) }}
+                    <div class="form-text">{{ 'The smallest number is looked up first.'|trans }}</div>
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    {{ form_label(create_form.starts_at) }}
+                    {{ form_widget(create_form.starts_at, { attr: { class: 'form-control' } }) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_label(create_form.ends_at) }}
+                    {{ form_widget(create_form.ends_at, { attr: { class: 'form-control' } }) }}
+                </div>
+            </div>
+            <div class="form-check mb-2">
+                {{ form_widget(create_form.exclusive, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.exclusive, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form_widget(create_form.active, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            {{ form_widget(create_form.locale) }}
+        {% endblock %}
+    {% endcomponent %}
+
+    {{ component('BoConfirmDialog', {
+        id: 'price-list-delete-modal',
+        title: 'Delete price list',
+        formAction: path('admin.pricing.price_list.delete'),
+        message: 'Do you really want to delete this price list? Its lines and its assignments are deleted with it.',
+        testid: 'price-list-delete',
+        prefillTrigger: 'data-price-list-id',
+        prefillInput: 'price_list_id',
+    }) }}
+    {% endif %}
+{% endblock %}
