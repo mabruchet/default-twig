@@ -56,7 +56,6 @@ final readonly class EffectivePricePresenter
         private CustomerPriceContextInterface $prices,
         private PriceListResolverInterface $priceLists,
         private CombinationLabeler $labeler,
-        private CustomerGroupRepository $customerGroups,
         private PriceVisibilityResolver $visibility,
         private CatalogRestrictionRule $assortmentRule,
         private ClosedCategoryProductRule $closedCategoryRule,

@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Tests\Http;
 
-use BackOfficeDefaultTwigBundle\Repository\CustomerGroupRepository;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationLabeler;
 use BackOfficeDefaultTwigBundle\Service\Product\EffectivePricePresenter;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -199,7 +198,6 @@ final class EffectivePriceBackOfficeTest extends WebIntegrationTestCase
             $spy,
             $this->getService(PriceListResolverInterface::class),
             $this->getService(CombinationLabeler::class),
-            $this->getService(CustomerGroupRepository::class),
             $this->getService(\Thelia\Domain\Pricing\PriceVisibility\PriceVisibilityResolver::class),
             $this->getService(\Thelia\Domain\Catalog\Restriction\CatalogRestrictionRule::class),
             $this->getService(\Thelia\Domain\Catalog\Product\ClosedCategoryProductRule::class),

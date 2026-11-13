@@ -125,7 +125,7 @@ final class ProductPriceDisplayController
         $this->adminLogger->log(
             self::RESOURCE,
             AccessManager::UPDATE,
-            \sprintf('Price display of product %d set to %s', $productId, $mode?->value ?? 'the shop default'),
+            \sprintf('Price display of product %d set to %s', $productId, $mode->value ?? 'the shop default'),
             $productId,
         );
         $this->flashes->add($request, 'success', $this->translator->trans('The display of the prices has been saved.'));
