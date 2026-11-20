@@ -1,0 +1,189 @@
+{% set role_options %}
+    {% for role in roles %}
+        <option value="{{ role.code }}">{{ role.title }}</option>
+    {% endfor %}
+{% endset %}
+
+<div data-testid="company-buyers">
+    <div class="card mb-3">
+        <div class="card-body">
+            <p class="text-body-secondary small" data-testid="company-buyers-total">{{ '%count% buyer(s)'|trans({'%count%': buyers_total}) }}</p>
+            {% if buyers %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ 'Buyer'|trans }}</th>
+                                <th scope="col">{{ 'Role'|trans }}</th>
+                                <th scope="col">{{ 'Limit per order'|trans }}</th>
+                                <th scope="col">{{ 'Limit per period'|trans }}</th>
+                                <th scope="col">{{ 'Period'|trans }}</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for buyer in buyers %}
+                                {% set form_id = 'buyer-update-' ~ buyer.customerId %}
+                                <tr data-testid="company-buyer-{{ buyer.customerId }}">
+                                    <td>
+                                        {% if buyer.url %}<a href="{{ buyer.url }}">{{ buyer.name }}</a>{% else %}{{ buyer.name }}{% endif %}
+                                        <div class="text-muted small">{{ buyer.email }}{% if buyer.ref %} - {{ buyer.ref }}{% endif %}</div>
+                                        {% if not buyer.enabled %}<span class="badge text-bg-warning-subtle text-warning-emphasis">{{ 'Disabled account'|trans }}</span>{% endif %}
+                                    </td>
+                                    <td>
+                                        <select name="role_code" class="form-select form-select-sm" form="{{ form_id }}" aria-label="{{ 'Role'|trans }}" data-testid="company-buyer-role-{{ buyer.customerId }}"{% if not can_update %} disabled{% endif %}>
+                                            {% for role in roles %}
+                                                <option value="{{ role.code }}"{% if role.code == buyer.roleCode %} selected{% endif %}>{{ role.title }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td><input type="text" inputmode="decimal" name="order_limit" value="{{ buyer.orderLimitInput }}" class="form-control form-control-sm" form="{{ form_id }}" aria-label="{{ 'Limit per order'|trans }}"{% if not can_update %} disabled{% endif %}></td>
+                                    <td><input type="text" inputmode="decimal" name="period_limit" value="{{ buyer.periodLimitInput }}" class="form-control form-control-sm" form="{{ form_id }}" aria-label="{{ 'Limit per period'|trans }}"{% if not can_update %} disabled{% endif %}></td>
+                                    <td>
+                                        <select name="period" class="form-select form-select-sm" form="{{ form_id }}" aria-label="{{ 'Period'|trans }}"{% if not can_update %} disabled{% endif %}>
+                                            <option value="">-</option>
+                                            <option value="week"{% if buyer.period == 'week' %} selected{% endif %}>{{ 'Week'|trans }}</option>
+                                            <option value="month"{% if buyer.period == 'month' %} selected{% endif %}>{{ 'Month'|trans }}</option>
+                                            <option value="year"{% if buyer.period == 'year' %} selected{% endif %}>{{ 'Year'|trans }}</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-end text-nowrap">
+                                        {% if can_update %}
+                                            <form id="{{ form_id }}" method="post" action="{{ path('admin.company.buyer.update', { company_id: company.id, customer_id: buyer.customerId }) }}" class="d-inline">
+                                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary" data-testid="company-buyer-save-{{ buyer.customerId }}">{{ 'Save'|trans }}</button>
+                                            </form>
+                                            <form method="post" action="{{ path('admin.company.buyer.detach', { company_id: company.id, customer_id: buyer.customerId }) }}" class="d-inline">
+                                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" data-testid="company-buyer-detach-{{ buyer.customerId }}">{{ 'Detach'|trans }}</button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0" data-testid="company-buyers-empty">{{ 'No buyer is attached to this company yet.'|trans }}</p>
+            {% endif %}
+            {% if buyers_last_page > 1 %}
+                {{ component('BoPagination', {
+                    route: 'admin.company.view',
+                    currentPage: buyers_page,
+                    lastPage: buyers_last_page,
+                    routeParams: { company_id: company.id, tab: 'buyers' },
+                    ariaLabel: 'Buyers pagination'|trans,
+                    testid: 'company-buyers-pagination',
+                }) }}
+            {% endif %}
+            <p class="text-muted small mt-3 mb-0">{{ 'Limits are amounts including taxes and delivery, in the default currency. Leave them empty for no limit. A company always keeps at least one administrator.'|trans }}</p>
+        </div>
+    </div>
+
+    {% if can_update %}
+        <div class="row g-3 mb-3">
+            {% if can_pick_customers %}
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header"><h2 class="h5 mb-0">{{ 'Attach an existing account'|trans }}</h2></div>
+                        <div class="card-body">
+                            <form method="post" action="{{ path('admin.company.buyer.attach', { company_id: company.id }) }}" data-testid="company-buyer-attach-form">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                <div class="mb-3">
+                                    <label class="form-label" for="company-attach-lookup">{{ 'E-mail address or reference of the customer'|trans }}</label>
+                                    <input type="text" id="company-attach-lookup" name="lookup" class="form-control" required autocomplete="off">
+                                    <div class="form-text">{{ 'The exact e-mail address or the exact reference: a part of a name or of an address finds nothing.'|trans }}</div>
+                                </div>
+                                {{ include('@BackOfficeDefaultTwig/company/_buyer_fields.html.twig', { prefix: 'attach', role_options: role_options }) }}
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="submit" class="btn btn-primary" data-testid="company-buyer-attach-submit">{{ 'Attach'|trans }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if is_granted('CREATE', 'admin.customer') %}
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header"><h2 class="h5 mb-0">{{ 'Create a buyer'|trans }}</h2></div>
+                        <div class="card-body">
+                            <form method="post" action="{{ path('admin.company.buyer.create', { company_id: company.id }) }}" data-testid="company-buyer-create-form">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="company-create-firstname">{{ 'First name'|trans }}</label>
+                                        <input type="text" id="company-create-firstname" name="firstname" class="form-control" required maxlength="255">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="company-create-lastname">{{ 'Last name'|trans }}</label>
+                                        <input type="text" id="company-create-lastname" name="lastname" class="form-control" required maxlength="255">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="company-create-email">{{ 'E-mail address'|trans }}</label>
+                                        <input type="email" id="company-create-email" name="email" class="form-control" required maxlength="255">
+                                        <div class="form-text">{{ 'The account is created, then attached. The buyer chooses a password with the lost password link.'|trans }}</div>
+                                    </div>
+                                </div>
+                                {{ include('@BackOfficeDefaultTwig/company/_buyer_fields.html.twig', { prefix: 'create', role_options: role_options }) }}
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="submit" class="btn btn-primary" data-testid="company-buyer-create-submit">{{ 'Create the buyer'|trans }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="card" data-testid="company-roles">
+        <div class="card-header"><h2 class="h5 mb-0">{{ 'Roles of this company'|trans }}</h2></div>
+        <div class="card-body">
+            <p class="text-muted small">{{ 'The roles every company shares are managed in the configuration. A role made here is given to the buyers of this company only.'|trans }}</p>
+            {% for role in own_roles %}
+                <details class="mb-3" data-testid="company-role-{{ role.id }}">
+                    <summary class="fw-semibold">{{ role.title }} <code class="text-muted">{{ role.code }}</code> <span class="badge text-bg-light border">{{ '%count% buyer(s)'|trans({'%count%': role.buyers}) }}</span></summary>
+                    <div class="mt-3">
+                        {{ include('@BackOfficeDefaultTwig/company/_role_form.html.twig', {
+                            action: path('admin.company.role.save', { company_id: company.id }),
+                            role: role,
+                            granted: role.permissions,
+                            title: role.editTitle,
+                            labels: permission_labels,
+                            edit_language_id: edit_language_id,
+                            testid: 'company-role-' ~ role.id,
+                            read_only: not can_update,
+                        }) }}
+                        {% if can_update %}
+                            <form method="post" action="{{ path('admin.company.role.delete', { company_id: company.id, role_id: role.id }) }}" class="mt-2">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" data-testid="company-role-delete-{{ role.id }}">{{ 'Delete the role'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </details>
+            {% else %}
+                <p class="text-muted" data-testid="company-roles-empty">{{ 'This company has no role of its own.'|trans }}</p>
+            {% endfor %}
+
+            {% if can_update %}
+                <details data-testid="company-role-new">
+                    <summary class="fw-semibold">{{ 'Add a role to this company'|trans }}</summary>
+                    <div class="mt-3">
+                        {{ include('@BackOfficeDefaultTwig/company/_role_form.html.twig', {
+                            action: path('admin.company.role.save', { company_id: company.id }),
+                            role: null,
+                            granted: [],
+                            title: '',
+                            labels: permission_labels,
+                            edit_language_id: edit_language_id,
+                            testid: 'company-role-new',
+                        }) }}
+                    </div>
+                </details>
+            {% endif %}
+        </div>
+    </div>
+</div>

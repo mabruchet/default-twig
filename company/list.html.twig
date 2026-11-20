@@ -1,0 +1,140 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Companies'|trans }}{% endblock %}
+{% block body_testid %}company-list{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.customers') }}">{{ 'Customers'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Companies'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="companies-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Companies'|trans }}</h1>
+            {% if is_granted('CREATE', 'admin.company') %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#company-create-modal" data-testid="company-create-button">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a company'|trans }}
+                </button>
+            {% endif %}
+        </div>
+
+        <p class="text-muted">
+            {{ 'A company groups several customer accounts, its buyers, who order for it with a role and spending limits. Its orders and the addresses it shares belong to the company, whoever placed them.'|trans }}
+        </p>
+
+        {% if total == 0 and filters.q == '' and filters.active is null %}
+            <div class="card" data-testid="companies-empty">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-building fs-1 text-muted" aria-hidden="true"></i>
+                    <h2 class="h5 mt-3">{{ 'No company yet'|trans }}</h2>
+                    <p class="text-muted mb-3">{{ 'Create a company, then attach to it the customer accounts that order for it. A shop without any company works as before.'|trans }}</p>
+                    {% if is_granted('CREATE', 'admin.company') %}
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#company-create-modal">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a company'|trans }}
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <form method="get" action="{{ path('admin.company.list') }}" class="row g-2 mb-3" data-testid="companies-filters">
+                <div class="col-md-6">
+                    <label class="form-label" for="company-filter-q">{{ 'Name or SIRET'|trans }}</label>
+                    <input type="search" name="q" id="company-filter-q" class="form-control" value="{{ filters.q }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="company-filter-active">{{ 'State'|trans }}</label>
+                    <select name="active" id="company-filter-active" class="form-select">
+                        <option value="">{{ 'All'|trans }}</option>
+                        <option value="1"{% if filters.active is same as(true) %} selected{% endif %}>{{ 'Active'|trans }}</option>
+                        <option value="0"{% if filters.active is same as(false) %} selected{% endif %}>{{ 'Suspended'|trans }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary w-100">{{ 'Filter'|trans }}</button>
+                </div>
+            </form>
+
+            <p class="text-body-secondary small" data-testid="companies-total">{{ '%count% company(ies)'|trans({'%count%': total}) }}</p>
+
+            {{ component('BoDataTable', {
+                id: 'companies',
+                columns: [
+                    column('id', 'ID'|trans, 'start', 'id', hideBelow: 'md'),
+                    column('name', 'Name'|trans, 'start', 'name'),
+                    column('siret', 'SIRET'|trans, 'start', 'siret', hideBelow: 'md'),
+                    column('buyers', 'Buyers'|trans, 'end'),
+                    column('orders', 'Orders'|trans, 'end'),
+                    column_badge('active', 'State'|trans, { active: 'success', suspended: 'warning' }, 'center', 'active_label'),
+                    column_actions('_actions', 'Actions'|trans),
+                ],
+                rows: rows,
+                emptyMessage: 'No company matches.'|trans,
+                sortField: sort_field,
+                sortDirection: sort_direction,
+            }) }}
+
+            {% if last_page > 1 %}
+                {{ component('BoPagination', {
+                    route: 'admin.company.list',
+                    currentPage: current_page,
+                    lastPage: last_page,
+                    routeParams: { q: filters.q ?: null, active: filters.active is same as(true) ? 1 : (filters.active is same as(false) ? 0 : null), order: sort_field, direction: sort_direction },
+                    ariaLabel: 'Companies pagination'|trans,
+                    testid: 'companies-pagination',
+                }) }}
+            {% endif %}
+        {% endif %}
+    </div>
+
+    {% if is_granted('CREATE', 'admin.company') %}
+        <div class="modal fade" id="company-create-modal" tabindex="-1" aria-labelledby="company-create-title" aria-hidden="true" data-testid="company-create">
+            <div class="modal-dialog">
+                <form method="post" action="{{ path('admin.company.create') }}" class="modal-content" data-testid="company-create-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <div class="modal-header">
+                        <h2 class="modal-title h5" id="company-create-title">{{ 'Create a new company'|trans }}</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label" for="company-create-name">{{ 'Name'|trans }}</label>
+                            <input type="text" name="name" id="company-create-name" class="form-control" required maxlength="255">
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="company-create-siret">{{ 'SIRET'|trans }}</label>
+                                <input type="text" name="siret" id="company-create-siret" class="form-control" maxlength="20">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="company-create-vat">{{ 'VAT number'|trans }}</label>
+                                <input type="text" name="vat_number" id="company-create-vat" class="form-control" maxlength="20">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ 'Cancel'|trans }}</button>
+                        <button type="submit" class="btn btn-primary" data-testid="company-create-submit">{{ 'Create'|trans }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if is_granted('DELETE', 'admin.company') %}
+        {{ component('BoConfirmDialog', {
+            id: 'company-delete-modal',
+            title: 'Delete company',
+            formAction: path('admin.company.delete'),
+            message: 'Do you really want to delete this company? Its buyers are released and the addresses it shared become personal ones. A company with orders cannot be deleted: suspend it instead.',
+            testid: 'company-delete',
+            prefillTrigger: 'data-company-id',
+            prefillInput: 'company_id',
+        }) }}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Company'|trans }} - {{ company.name }}{% endblock %}
+{% block body_testid %}company-view{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.company.list') }}">{{ 'Companies'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ company.name }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="company-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-2">
+            <h1 class="h3 mb-0">
+                {{ company.name }}
+                <small class="text-muted">#{{ company.id }}</small>
+                {% if company.active %}
+                    <span class="badge text-bg-success align-middle" data-testid="company-state">{{ 'Active'|trans }}</span>
+                {% else %}
+                    <span class="badge text-bg-warning align-middle" data-testid="company-state">{{ 'Suspended'|trans }}</span>
+                {% endif %}
+            </h1>
+            {% if can_update %}
+                <form method="post" action="{{ path(company.active ? 'admin.company.suspend' : 'admin.company.reactivate', { company_id: company.id }) }}" class="m-0" data-testid="company-state-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    {% if company.active %}
+                        <button type="submit" class="btn btn-outline-warning" data-testid="company-suspend"><i class="bi bi-pause-circle" aria-hidden="true"></i> {{ 'Suspend'|trans }}</button>
+                    {% else %}
+                        <button type="submit" class="btn btn-outline-success" data-testid="company-reactivate"><i class="bi bi-play-circle" aria-hidden="true"></i> {{ 'Reactivate'|trans }}</button>
+                    {% endif %}
+                </form>
+            {% endif %}
+        </div>
+        {% if not company.active %}
+            <p class="text-muted small" data-testid="company-suspended-note">{{ 'A suspended company keeps its buyers and its history, and places no order until it is reactivated.'|trans }}</p>
+        {% endif %}
+
+        <ul class="nav nav-tabs mb-3" data-testid="company-tabs">
+            {% for name, label in { infos: 'Details'|trans, buyers: 'Buyers'|trans, addresses: 'Addresses'|trans, orders: 'Orders'|trans } %}
+                <li class="nav-item">
+                    <a class="nav-link{{ tab == name ? ' active' : '' }}" href="{{ path('admin.company.view', { company_id: company.id, tab: name }) }}"{% if tab == name %} aria-current="page"{% endif %} data-testid="company-tab-{{ name }}">{{ label }}{% if name == 'buyers' %} <span class="badge text-bg-light border">{{ buyer_count }}</span>{% endif %}</a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if tab == 'infos' %}
+            {{ include('@BackOfficeDefaultTwig/company/_infos.html.twig') }}
+        {% elseif tab == 'buyers' %}
+            {{ include('@BackOfficeDefaultTwig/company/_buyers.html.twig') }}
+        {% elseif tab == 'addresses' %}
+            {{ include('@BackOfficeDefaultTwig/company/_addresses.html.twig') }}
+        {% else %}
+            {{ include('@BackOfficeDefaultTwig/company/_orders.html.twig') }}
+        {% endif %}
+    </div>
+{% endblock %}

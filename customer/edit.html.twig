@@ -311,6 +311,40 @@
             {% endblock %}
         {% endembed %}
 
+        {# ── Company, read only, left out for an administrator who may not view the companies ── #}
+        {% if company_visible|default(false) %}
+            {% embed '@BackOfficeDefaultTwig/customer/_section.html.twig' with {
+                id: 'company', title: 'Company'|trans, icon: 'bi-building', testid: 'customer-company-section',
+                customer_company: customer_company,
+            } only %}
+                {% block section_body %}
+                    {% if customer_company %}
+                        <dl class="row mb-0" data-testid="customer-company">
+                            <dt class="col-sm-3 fw-normal text-muted">{{ 'Company'|trans }}</dt>
+                            <dd class="col-sm-9">
+                                <a href="{{ customer_company.company.url }}" data-testid="customer-company-link">{{ customer_company.company.name }}</a>
+                                {% if not customer_company.company.active %}<span class="badge text-bg-warning ms-1">{{ 'Suspended'|trans }}</span>{% endif %}
+                            </dd>
+                            <dt class="col-sm-3 fw-normal text-muted">{{ 'Role'|trans }}</dt>
+                            <dd class="col-sm-9" data-testid="customer-company-role">{{ customer_company.role }}</dd>
+                            <dt class="col-sm-3 fw-normal text-muted">{{ 'Limit per order'|trans }}</dt>
+                            <dd class="col-sm-9" dir="ltr">{{ customer_company.orderLimit ?? '-' }}</dd>
+                            <dt class="col-sm-3 fw-normal text-muted">{{ 'Limit per period'|trans }}</dt>
+                            <dd class="col-sm-9" dir="ltr">
+                                {% if customer_company.periodLimit %}
+                                    {{ customer_company.periodLimit }} / {{ ({ week: 'Week'|trans, month: 'Month'|trans, year: 'Year'|trans })[customer_company.period] ?? customer_company.period }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    {% else %}
+                        <p class="text-muted mb-0" data-testid="customer-company-none">{{ 'This customer belongs to no company.'|trans }}</p>
+                    {% endif %}
+                {% endblock %}
+            {% endembed %}
+        {% endif %}
+
         {# ── Stored payment methods, read only, left out for an administrator who may not see them ── #}
         {% if can_view_payment_methods|default(false) %}
             {% embed '@BackOfficeDefaultTwig/customer/_section.html.twig' with {

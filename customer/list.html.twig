@@ -334,6 +334,25 @@
                         </fieldset>
                     </div>
 
+                    {% if filters.company_filter_visible %}
+                        <div class="col-md-6 col-lg-4">
+                            <fieldset data-testid="customer-filter-company">
+                                <legend class="form-label">{{ 'Company'|trans }}</legend>
+                                <select name="in_company" class="form-select form-select-sm mb-2" aria-label="{{ 'Membership of a company'|trans }}" data-testid="customer-filter-in-company">
+                                    <option value="">{{ 'All'|trans }}</option>
+                                    <option value="with"{% if filters.in_company_value == 'with' %} selected{% endif %}>{{ 'Belongs to a company'|trans }}</option>
+                                    <option value="without"{% if filters.in_company_value == 'without' %} selected{% endif %}>{{ 'Belongs to no company'|trans }}</option>
+                                </select>
+                                <select name="company_id" class="form-select form-select-sm" aria-label="{{ 'Company'|trans }}" data-testid="customer-filter-company-id">
+                                    <option value="">{{ 'Any company'|trans }}</option>
+                                    {% for option in filters.company_options %}
+                                        <option value="{{ option.id }}"{% if option.id == filters.selected_company_id %} selected{% endif %}>{{ option.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </fieldset>
+                        </div>
+                    {% endif %}
+
                     <div class="col-md-6 col-lg-4">
                         <fieldset>
                             <legend class="form-label">{{ 'Customer group'|trans }}</legend>
@@ -400,6 +419,7 @@
                     column_html('name_html', 'Customer'|trans, 'start', 'lastname'),
                     column_html('phone_html', 'Phone'|trans, visibleFrom: 'xl'),
                     column_html('group_html', 'Group'|trans, 'start', 'group', visibleFrom: 'lg'),
+                    ...(company_column ? [column_html('company_html', 'Company'|trans, 'start', visibleFrom: 'xl')] : []),
                     column_html('orders_html', 'Orders'|trans, 'center', visibleFrom: 'lg'),
                     column_html('total_spent_html', 'Total spent'|trans, 'end', 'total_spent'),
                     column_html('last_order_html', 'Last order'|trans, 'start', visibleFrom: 'xl'),

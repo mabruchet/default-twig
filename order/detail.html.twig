@@ -422,6 +422,14 @@
                     </div>
                 </div>
 
+                {% if order_company %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            {% include '@BackOfficeDefaultTwig/order/_company_card.html.twig' with { order_company: order_company } only %}
+                        </div>
+                    </div>
+                {% endif %}
+
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         {% include '@BackOfficeDefaultTwig/order/_address_card.html.twig' with {

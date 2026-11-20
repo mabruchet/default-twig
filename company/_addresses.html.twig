@@ -1,0 +1,35 @@
+<div class="card" data-testid="company-addresses">
+    <div class="card-body">
+        <p class="text-muted small">{{ 'The addresses the buyers of the company share. Each one stays attached to the account that created it, and is edited from the sheet of that customer.'|trans }}</p>
+        {% if addresses %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ 'Label'|trans }}</th>
+                            <th scope="col">{{ 'Name'|trans }}</th>
+                            <th scope="col">{{ 'Address'|trans }}</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for address in addresses %}
+                            <tr data-testid="company-address-{{ address.id }}">
+                                <td>{{ address.label|default('-') }}{% if address.billing %} <span class="badge text-bg-primary">{{ 'Billing address'|trans }}</span>{% endif %}</td>
+                                <td>{{ address.name }}</td>
+                                <td>{{ address.address }}</td>
+                                <td class="text-end">
+                                    {% if can_view_customers %}
+                                        <a href="{{ path('admin.address.update.view', { address_id: address.id }) }}" class="btn btn-sm btn-outline-secondary">{{ 'Edit'|trans }}</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0" data-testid="company-addresses-empty">{{ 'No address is shared with this company yet.'|trans }}</p>
+        {% endif %}
+    </div>
+</div>

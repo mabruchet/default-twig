@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Customer;
 
+use BackOfficeDefaultTwigBundle\Repository\CompanyRepository;
 use BackOfficeDefaultTwigBundle\Repository\CountryRepository;
 use BackOfficeDefaultTwigBundle\Repository\CustomerGroupRepository;
 use BackOfficeDefaultTwigBundle\Repository\CustomerRepository;
@@ -43,6 +44,9 @@ final class CustomerFilterCatalog
     /** @var list<array{id: int, title: string, color: string}>|null */
     private ?array $tags = null;
 
+    /** @var list<array{id: int, title: string}>|null */
+    private ?array $companies = null;
+
     /** @var array{min: float, max: float, step: int}|null */
     private ?array $totalSpentBounds = null;
 
@@ -54,6 +58,7 @@ final class CustomerFilterCatalog
         private readonly CustomerGroupRepository $customerGroups,
         private readonly CountryRepository $countries,
         private readonly TagSwatch $swatch,
+        private readonly CompanyRepository $companyRepository,
     ) {
     }
 
@@ -113,6 +118,30 @@ final class CustomerFilterCatalog
             static fn (array $choice): array => ['id' => $choice['id'], 'title' => $choice['label']],
             $this->customerGroups->findChoices($locale),
         );
+    }
+
+    /**
+     * The first companies by name, for the company filter.
+     *
+     * @return list<array{id: int, title: string}>
+     */
+    public function companies(): array
+    {
+        return $this->companies ??= array_map(
+            static fn (array $choice): array => ['id' => $choice['id'], 'title' => $choice['name']],
+            $this->companyRepository->choices(),
+        );
+    }
+
+    public function companyName(int $companyId): string
+    {
+        foreach ($this->companies() as $company) {
+            if ($company['id'] === $companyId) {
+                return $company['title'];
+            }
+        }
+
+        return $this->companyRepository->summary($companyId)['name'] ?? '#'.$companyId;
     }
 
     /**

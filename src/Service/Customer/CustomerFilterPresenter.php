@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Customer;
 
+use BackOfficeDefaultTwigBundle\Service\Company\CompanyLinks;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -31,6 +32,7 @@ final readonly class CustomerFilterPresenter
         private TranslatorInterface $translator,
         private CustomerFilterCatalog $catalog,
         private MoneyFormatter $money,
+        private CompanyLinks $companyLinks,
     ) {
     }
 
@@ -63,6 +65,10 @@ final readonly class CustomerFilterPresenter
             'title_options' => $titles,
             'group_options' => $groups,
             'tag_options' => $tags,
+            'company_filter_visible' => $this->companyLinks->isVisible(),
+            'company_options' => $this->companyLinks->isVisible() ? $this->catalog->companies() : [],
+            'in_company_value' => $this->triStateValue($filters->inCompany),
+            'selected_company_id' => $filters->companyId,
             'tristate_options' => $this->tristateOptions(),
             'newsletter_options' => $this->newsletterOptions(),
             'guest_options' => $this->guestOptions(),
@@ -221,6 +227,26 @@ final readonly class CustomerFilterPresenter
                 CustomerFilters::KEY_TAG_IDS,
                 $this->translator->trans('Tags'),
                 $this->joinTitles($filters->tagIds, $tagIndex),
+            );
+        }
+
+        if ($filters->inCompany !== null) {
+            $chips[] = $this->chip(
+                $filters,
+                CustomerFilters::KEY_IN_COMPANY,
+                $this->translator->trans('Company'),
+                $filters->inCompany
+                    ? $this->translator->trans('Belongs to a company')
+                    : $this->translator->trans('Belongs to no company'),
+            );
+        }
+
+        if ($filters->companyId !== null) {
+            $chips[] = $this->chip(
+                $filters,
+                CustomerFilters::KEY_COMPANY,
+                $this->translator->trans('Company'),
+                $this->catalog->companyName($filters->companyId),
             );
         }
 
@@ -446,6 +472,9 @@ final readonly class CustomerFilterPresenter
             ++$count;
         }
         if ($filters->tagIds !== []) {
+            ++$count;
+        }
+        if ($filters->inCompany !== null || $filters->companyId !== null) {
             ++$count;
         }
         if ($filters->phone !== '') {

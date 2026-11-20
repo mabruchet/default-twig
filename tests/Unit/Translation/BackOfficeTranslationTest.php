@@ -14,11 +14,16 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Tests\Unit\Translation;
 
+use BackOfficeDefaultTwigBundle\Controller\Company\CompanyBuyerController;
+use BackOfficeDefaultTwigBundle\Controller\Company\CompanyController;
+use BackOfficeDefaultTwigBundle\Controller\Company\CompanyRoleController;
 use BackOfficeDefaultTwigBundle\Controller\Configuration\CustomerGroupController;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFailureMessage;
+use BackOfficeDefaultTwigBundle\Service\Company\CompanyWriteGate;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Finder\Finder;
+use Thelia\Domain\Company\CompanyPermission;
 use Thelia\Domain\DataTransfer\Export\ExportPeriod;
 
 /**
@@ -41,25 +46,25 @@ final class BackOfficeTranslationTest extends TestCase
 
     /** The texts each catalogue lacks, as measured when it was last changed. */
     private const KNOWN_GAPS = [
-        'ar_SA' => 2104,
-        'cs_CZ' => 1957,
-        'de_DE' => 1944,
-        'el_GR' => 2104,
-        'es_ES' => 1886,
-        'fa_IR' => 2104,
-        'he_IL' => 2104,
-        'hu_HU' => 2104,
-        'id_ID' => 2104,
-        'it_IT' => 1886,
-        'nl_NL' => 1957,
-        'pl_PL' => 2104,
-        'pt_BR' => 2104,
-        'pt_PT' => 2104,
-        'ru_RU' => 1957,
-        'sk_SK' => 2104,
-        'tr_TR' => 2104,
-        'uk_UA' => 2104,
-        'zh_CN' => 2104,
+        'ar_SA' => 2199,
+        'cs_CZ' => 2052,
+        'de_DE' => 2039,
+        'el_GR' => 2199,
+        'es_ES' => 1981,
+        'fa_IR' => 2199,
+        'he_IL' => 2199,
+        'hu_HU' => 2199,
+        'id_ID' => 2199,
+        'it_IT' => 1981,
+        'nl_NL' => 2052,
+        'pl_PL' => 2199,
+        'pt_BR' => 2199,
+        'pt_PT' => 2199,
+        'ru_RU' => 2052,
+        'sk_SK' => 2199,
+        'tr_TR' => 2199,
+        'uk_UA' => 2199,
+        'zh_CN' => 2199,
     ];
 
     #[DataProvider('catalogues')]
@@ -149,6 +154,41 @@ final class BackOfficeTranslationTest extends TestCase
             'Create a new customer group',
             'Delete customer group',
             'Do you really want to delete this customer group? Its customers move to the default group. The default group cannot be deleted.',
+        ]));
+    }
+
+    /**
+     * The company screens: the names of the actions their controllers pass to the gate, the
+     * messages the gate shows once an action went through, and the labels of the permissions,
+     * which the templates translate from a variable. French is complete; the other catalogues
+     * are counted by KNOWN_GAPS, as for every text.
+     */
+    public function testTheTextsOfTheCompanyScreensNamedApartAreInFrench(): void
+    {
+        self::assertSame([], self::missingFrom('fr_FR', [
+            CompanyWriteGate::GENERIC_FAILURE,
+            CompanyController::CREATION_LABEL,
+            CompanyController::UPDATE_LABEL,
+            CompanyController::DELETION_LABEL,
+            CompanyController::SUSPENSION_LABEL,
+            CompanyBuyerController::ATTACH_LABEL,
+            CompanyBuyerController::CREATION_LABEL,
+            CompanyBuyerController::CHANGE_LABEL,
+            CompanyBuyerController::DETACH_LABEL,
+            CompanyBuyerController::ROLE_LABEL,
+            CompanyRoleController::ROLE_LABEL,
+            'Company created.',
+            'Company saved.',
+            'Company suspended.',
+            'Company reactivated.',
+            'Company deleted.',
+            'Buyer attached.',
+            'Buyer created.',
+            'Buyer saved.',
+            'Buyer detached.',
+            'Role saved.',
+            'Role deleted.',
+            ...array_values(CompanyPermission::labels()),
         ]));
     }
 

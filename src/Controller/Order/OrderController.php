@@ -19,6 +19,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
 use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
+use BackOfficeDefaultTwigBundle\Service\Company\CompanyLinks;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\Order\ForcedStatusChangeLog;
@@ -115,6 +116,7 @@ final class OrderController
         private readonly OrderAccess $orderAccess,
         private readonly OrderEditContextBuilder $editContext,
         private readonly OrderPaymentContextBuilder $paymentContextBuilder,
+        private readonly CompanyLinks $companyLinks,
     ) {
     }
 
@@ -173,6 +175,7 @@ final class OrderController
             $this->paymentContextBuilder->build($order, $locale),
             [
                 'order' => $order,
+                'order_company' => $this->companyLinks->ofOrder($order),
                 'sale_unit_title' => $this->orderSaleUnits->titleOf($order, $locale),
                 'active_tab' => 'shipments' === $request->query->get('tab') ? 'shipments' : 'cart',
                 'order_items' => $this->orderItemsPage($order_id, $itemsPage, $itemsPerPage),

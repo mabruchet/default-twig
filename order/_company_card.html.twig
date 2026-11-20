@@ -1,0 +1,17 @@
+<div class="card h-100" data-testid="order-company-card">
+    <div class="card-header">{{ 'Company'|trans }}</div>
+    <div class="card-body small">
+        <dl class="row mb-0">
+            <dt class="col-sm-5 fw-normal text-muted">{{ 'Company'|trans }}</dt>
+            <dd class="col-sm-7 mb-1"><a href="{{ order_company.company.url }}" data-testid="order-company-link">{{ order_company.company.name }}</a></dd>
+            <dt class="col-sm-5 fw-normal text-muted">{{ 'Placed by'|trans }}</dt>
+            <dd class="col-sm-7 mb-0" data-testid="order-company-placed-by">
+                {% if order_company.placedBy %}
+                    {% if order_company.placedBy.url %}<a href="{{ order_company.placedBy.url }}">{{ order_company.placedBy.name }}</a>{% else %}{{ order_company.placedBy.name }}{% endif %}
+                {% else %}
+                    -
+                {% endif %}
+            </dd>
+        </dl>
+    </div>
+</div>

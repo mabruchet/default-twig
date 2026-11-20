@@ -53,6 +53,8 @@ final readonly class CustomerFilters
     public const KEY_TITLE_IDS = 'title_ids';
     public const KEY_GROUP_IDS = 'group_ids';
     public const KEY_TAG_IDS = 'tag_ids';
+    public const KEY_IN_COMPANY = 'in_company';
+    public const KEY_COMPANY = 'company_id';
     public const KEY_PHONE = 'phone';
     public const KEY_SEARCH = 'search';
     public const KEY_PERIOD = 'period';
@@ -84,6 +86,8 @@ final readonly class CustomerFilters
         public array $titleIds = [],
         public array $groupIds = [],
         public array $tagIds = [],
+        public ?bool $inCompany = null,
+        public ?int $companyId = null,
         public string $phone = '',
         public string $search = '',
         public string $sort = self::DEFAULT_SORT,
@@ -161,6 +165,8 @@ final readonly class CustomerFilters
             titleIds: self::parseIntArray($query->all('title_ids')),
             groupIds: self::parseIntArray($query->all('group_ids')),
             tagIds: self::parseIntArray($query->all('tag_ids')),
+            inCompany: self::parseTriStateBool((string) $query->get('in_company', '')),
+            companyId: self::parsePositiveInt((string) $query->get('company_id', '')),
             phone: trim((string) $query->get('phone', '')),
             search: trim((string) $query->get('q', '')),
             sort: $sort,
@@ -185,6 +191,8 @@ final readonly class CustomerFilters
             && $this->titleIds === []
             && $this->groupIds === []
             && $this->tagIds === []
+            && $this->inCompany === null
+            && $this->companyId === null
             && $this->phone === '';
     }
 
@@ -237,6 +245,12 @@ final readonly class CustomerFilters
         if ($this->tagIds !== []) {
             $params['tag_ids'] = $this->tagIds;
         }
+        if ($this->inCompany !== null) {
+            $params['in_company'] = $this->inCompany ? self::TRISTATE_WITH : self::TRISTATE_WITHOUT;
+        }
+        if ($this->companyId !== null) {
+            $params['company_id'] = $this->companyId;
+        }
         if ($this->phone !== '') {
             $params['phone'] = $this->phone;
         }
@@ -288,6 +302,8 @@ final readonly class CustomerFilters
             self::KEY_TITLE_IDS => ['titleIds' => []],
             self::KEY_GROUP_IDS => ['groupIds' => []],
             self::KEY_TAG_IDS => ['tagIds' => []],
+            self::KEY_IN_COMPANY => ['inCompany' => null],
+            self::KEY_COMPANY => ['companyId' => null],
             self::KEY_PHONE => ['phone' => ''],
             self::KEY_SEARCH => ['search' => ''],
             default => [],
@@ -325,6 +341,7 @@ final readonly class CustomerFilters
         $this->applyCountry($query);
         $this->applyPhone($query);
         $this->applyTags($query);
+        $this->applyCompany($query);
         $this->applySearch($query);
 
         return $query;
@@ -355,6 +372,25 @@ final readonly class CustomerFilters
         }
 
         $query->combine($conditions, 'OR');
+    }
+
+    /**
+     * Customers who belong to a company, to no company, or to one company: a correlated
+     * EXISTS on the link table, which holds one row per customer at most.
+     */
+    private function applyCompany(CustomerQuery $query): void
+    {
+        $link = 'SELECT 1 FROM company_customer cc WHERE cc.customer_id = '.CustomerTableMap::COL_ID;
+
+        if ($this->companyId !== null) {
+            $query->where('EXISTS ('.$link.' AND cc.company_id = ?)', $this->companyId, \PDO::PARAM_INT);
+
+            return;
+        }
+
+        if ($this->inCompany !== null) {
+            $query->where(($this->inCompany ? 'EXISTS' : 'NOT EXISTS').' ('.$link.')');
+        }
     }
 
     private function applyNewsletter(CustomerQuery $query): void
@@ -479,6 +515,8 @@ final readonly class CustomerFilters
             titleIds: \array_key_exists('titleIds', $overrides) ? $overrides['titleIds'] : $this->titleIds,
             groupIds: \array_key_exists('groupIds', $overrides) ? $overrides['groupIds'] : $this->groupIds,
             tagIds: \array_key_exists('tagIds', $overrides) ? $overrides['tagIds'] : $this->tagIds,
+            inCompany: \array_key_exists('inCompany', $overrides) ? $overrides['inCompany'] : $this->inCompany,
+            companyId: \array_key_exists('companyId', $overrides) ? $overrides['companyId'] : $this->companyId,
             phone: \array_key_exists('phone', $overrides) ? $overrides['phone'] : $this->phone,
             search: \array_key_exists('search', $overrides) ? $overrides['search'] : $this->search,
             sort: \array_key_exists('sort', $overrides) ? $overrides['sort'] : $this->sort,

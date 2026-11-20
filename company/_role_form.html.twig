@@ -1,0 +1,64 @@
+{#
+    The form of a role: its title, and one box per permission the shop knows.
+
+    action             where the form is sent
+    role               the role being edited, null for a new one
+    code_editable      the code is asked for a new role only
+    granted            the permissions the role grants
+    title              the title in the language of edition
+    labels             permission code => label
+    edit_language_id   language the title is written in
+    testid             prefix of the data-testid attributes
+    extra              hidden fields, name => value
+    read_only          the role is shown and cannot be changed
+#}
+<form method="post" action="{{ action }}" data-testid="{{ testid }}-form">
+    <input type="hidden" name="_token" value="{{ assignToken() }}">
+    <input type="hidden" name="edit_language_id" value="{{ edit_language_id }}">
+    {% if role %}<input type="hidden" name="role_id" value="{{ role.id }}">{% endif %}
+    {% for name, value in extra|default({}) %}
+        <input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}
+    <fieldset{% if read_only|default(false) %} disabled{% endif %}>
+        <div class="row g-3 mb-3">
+            <div class="col-md-5">
+                <label class="form-label" for="{{ testid }}-code">{{ 'Code'|trans }}</label>
+                {% if role %}
+                    <input type="text" id="{{ testid }}-code" class="form-control" value="{{ role.code }}" readonly>
+                {% else %}
+                    <input type="text" id="{{ testid }}-code" name="code" class="form-control" required maxlength="100" pattern="[a-z0-9][a-z0-9_.\-]*">
+                    <div class="form-text">{{ 'Lowercase letters, digits, dots, dashes and underscores. It cannot change once the role exists.'|trans }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-7">
+                <label class="form-label" for="{{ testid }}-title">{{ 'Title'|trans }}</label>
+                <input type="text" id="{{ testid }}-title" name="title" class="form-control" value="{{ title }}" maxlength="255">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{{ 'Permission'|trans }}</th>
+                        <th class="text-center" style="width: 6rem;">{{ 'Granted'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for code, label in labels %}
+                        <tr>
+                            <td>{{ label|trans }} <code class="ms-1 text-muted">{{ code }}</code></td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" name="permissions[]" value="{{ code }}" aria-label="{{ label|trans }}"{% if code in granted %} checked{% endif %} data-testid="{{ testid }}-permission-{{ code|replace({'.': '-', '_': '-'}) }}">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </fieldset>
+    {% if not read_only|default(false) %}
+        <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-primary" data-testid="{{ testid }}-submit"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save the role'|trans }}</button>
+        </div>
+    {% endif %}
+</form>

@@ -1,0 +1,23 @@
+<div class="row g-3">
+    <div class="col-12">
+        <label class="form-label" for="company-{{ prefix }}-role">{{ 'Role'|trans }}</label>
+        <select id="company-{{ prefix }}-role" name="role_code" class="form-select" data-testid="company-{{ prefix }}-role">{{ role_options|raw }}</select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="company-{{ prefix }}-order-limit">{{ 'Limit per order'|trans }}</label>
+        <input type="text" inputmode="decimal" id="company-{{ prefix }}-order-limit" name="order_limit" class="form-control">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="company-{{ prefix }}-period-limit">{{ 'Limit per period'|trans }}</label>
+        <input type="text" inputmode="decimal" id="company-{{ prefix }}-period-limit" name="period_limit" class="form-control">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="company-{{ prefix }}-period">{{ 'Period'|trans }}</label>
+        <select id="company-{{ prefix }}-period" name="period" class="form-select">
+            <option value="">-</option>
+            <option value="week">{{ 'Week'|trans }}</option>
+            <option value="month">{{ 'Month'|trans }}</option>
+            <option value="year">{{ 'Year'|trans }}</option>
+        </select>
+    </div>
+</div>

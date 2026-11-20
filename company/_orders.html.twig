@@ -1,0 +1,43 @@
+<div class="card" data-testid="company-orders">
+    <div class="card-body">
+        <p class="text-body-secondary small" data-testid="company-orders-total">{{ '%count% order(s)'|trans({'%count%': orders_total}) }}</p>
+        {% if company_orders %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ 'Reference'|trans }}</th>
+                            <th scope="col">{{ 'Date'|trans }}</th>
+                            <th scope="col">{{ 'Placed by'|trans }}</th>
+                            <th scope="col">{{ 'Status'|trans }}</th>
+                            <th scope="col" class="text-end">{{ 'Total'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in company_orders %}
+                            <tr data-testid="company-order-{{ order.id }}">
+                                <td>{% if order.url %}<a href="{{ order.url }}">{{ order.ref }}</a>{% else %}{{ order.ref }}{% endif %}</td>
+                                <td>{{ order.createdAt ? order.createdAt|format_datetime('short', 'short') : '-' }}</td>
+                                <td>{{ order.placedBy ?? '-' }}</td>
+                                <td><span class="badge" style="background-color: {{ order.statusColor|e('css') }}">{{ order.status }}</span></td>
+                                <td class="text-end" dir="ltr">{{ order.total }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0" data-testid="company-orders-empty">{{ 'No order was placed for this company yet.'|trans }}</p>
+        {% endif %}
+        {% if orders_last_page > 1 %}
+            {{ component('BoPagination', {
+                route: 'admin.company.view',
+                currentPage: orders_page,
+                lastPage: orders_last_page,
+                routeParams: { company_id: company.id, tab: 'orders' },
+                ariaLabel: 'Company orders pagination'|trans,
+                testid: 'company-orders-pagination',
+            }) }}
+        {% endif %}
+    </div>
+</div>

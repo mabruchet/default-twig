@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Controller\Customer;
 
 use BackOfficeDefaultTwigBundle\Form\Customer\AddressType;
 use BackOfficeDefaultTwigBundle\Form\Customer\CustomerType;
+use BackOfficeDefaultTwigBundle\Repository\CompanyRepository;
 use BackOfficeDefaultTwigBundle\Repository\CountryRepository;
 use BackOfficeDefaultTwigBundle\Repository\CustomerRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
@@ -24,6 +25,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormErrorRenderer;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormValidator;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\Company\CompanyLinks;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilterCatalog;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilters;
@@ -108,6 +110,8 @@ final class CustomerController
         private readonly CustomerSubscriptionsProvider $subscriptions,
         private readonly CustomerGroupAssignment $groupAssignment,
         private readonly RestrictedAdminGuard $restricted,
+        private readonly CompanyLinks $companyLinks,
+        private readonly CompanyRepository $companies,
     ) {
     }
 
@@ -121,6 +125,13 @@ final class CustomerController
         $page = max(1, (int) $request->query->get('page', 1));
         $locale = $request->getLocale();
         $filters = CustomerFilters::fromRequest($request);
+        $companyVisible = $this->companyLinks->isVisible();
+
+        // The company is no part of what the right on the customers opens: without the right
+        // on the companies, a filter on it would tell who belongs to one.
+        if (!$companyVisible) {
+            $filters = $filters->withoutFilter(CustomerFilters::KEY_IN_COMPANY)->withoutFilter(CustomerFilters::KEY_COMPANY);
+        }
 
         $paginated = $this->customerRepository->findPaginated($filters, $page, self::PAGE_SIZE, $locale);
 
@@ -137,6 +148,7 @@ final class CustomerController
         $groupLabels = array_column($this->filterCatalog->groups($locale), 'title', 'id');
         $countriesIndex = $this->buildCountriesIndex($primaryCountryIds, $locale);
         $tagsByCustomer = $this->tags->findTagsForMany(TagElement::ELEMENT_KEY_CUSTOMER, $customerIds);
+        $companiesByCustomer = $companyVisible ? $this->companies->companiesOfCustomers($customerIds) : [];
 
         $rows = [];
         foreach ($paginated['rows'] as $customer) {
@@ -155,6 +167,7 @@ final class CustomerController
                 countryTitle: $country['title'],
                 tags: $tagsByCustomer[$customerId] ?? [],
                 groupLabel: $groupLabels[(int) $customer->getCustomerGroupId()] ?? '',
+                company: $companiesByCustomer[$customerId] ?? null,
             );
         }
 
@@ -167,6 +180,7 @@ final class CustomerController
             'pages' => $paginated['lastPage'],
             'current_page' => $page,
             'filters' => $filtersPresented,
+            'company_column' => $companyVisible,
             'query_params' => $filters->toQueryParams(),
             'create_form' => $this->buildCreateForm($locale)->createView(),
         ]));
@@ -243,6 +257,8 @@ final class CustomerController
             'overview' => $overview,
             'can_view_payment_methods' => $canViewPaymentMethods,
             'payment_methods' => $canViewPaymentMethods ? $this->paymentMethods->forCustomer($customerId, $request->getLocale(), new \DateTimeImmutable('today')) : [],
+            'company_visible' => $this->companyLinks->isVisible(),
+            'customer_company' => $this->companyLinks->ofCustomer($customerId, $request->getLocale()),
             'can_view_subscriptions' => $this->subscriptions->canView(),
             'subscriptions' => $this->subscriptions->forCustomer($customerId, $request->getLocale()),
             'recent_orders' => $overview->canViewOrders ? $this->customerOrdersPage($customerId, $ordersPage, $ordersPerPage) : [],
