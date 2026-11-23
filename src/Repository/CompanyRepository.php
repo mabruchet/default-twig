@@ -294,13 +294,15 @@ final readonly class CompanyRepository
     }
 
     /**
-     * @param list<int> $customerIds
+     * An order whose placing buyer was deleted carries a null id: it is skipped.
+     *
+     * @param list<int|null> $customerIds
      *
      * @return array<int, string> the name of each customer, by id
      */
     public function customerNames(array $customerIds): array
     {
-        $ids = array_values(array_unique(array_filter($customerIds, static fn (int $id): bool => $id > 0)));
+        $ids = array_values(array_unique(array_filter($customerIds, static fn (?int $id): bool => null !== $id && $id > 0)));
         if ([] === $ids) {
             return [];
         }
