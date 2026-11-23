@@ -40,6 +40,8 @@ final readonly class CompanyRepository
 
     public const CHOICE_LIMIT = 200;
 
+    public const SEARCH_LIMIT = 20;
+
     public const LOOKUP_LIMIT = 5;
 
     public const SORTABLE_FIELDS = ['id', 'name', 'siret', 'created_at'];
@@ -125,6 +127,35 @@ final readonly class CompanyRepository
         }
 
         return $choices;
+    }
+
+    /**
+     * The companies whose name or SIRET holds the text, by name, for a search field: any company
+     * can be reached, however many the shop has, and no more than SEARCH_LIMIT come back.
+     *
+     * @return list<array{id: int, name: string, siret: string}>
+     */
+    public function searchByName(string $term): array
+    {
+        $query = CompanyQuery::create();
+
+        $term = trim($term);
+        if ('' !== $term) {
+            $like = '%'.self::escapeLike($term).'%';
+            $query
+                ->condition('name_like', 'company.name LIKE ?', $like)
+                ->condition('siret_like', 'company.siret LIKE ?', $like)
+                ->where(['name_like', 'siret_like'], Criteria::LOGICAL_OR);
+        }
+
+        $rows = $query->orderByName()->orderById()->limit(self::SEARCH_LIMIT)->select(['Id', 'Name', 'Siret'])->find();
+
+        $found = [];
+        foreach ($rows as $row) {
+            $found[] = ['id' => (int) $row['Id'], 'name' => (string) $row['Name'], 'siret' => (string) $row['Siret']];
+        }
+
+        return $found;
     }
 
     public function countBuyers(int $companyId): int

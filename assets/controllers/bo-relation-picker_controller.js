@@ -5,12 +5,14 @@ import { Controller } from '@hotwired/stimulus';
  * title) in one field. The server answers with the items this block can still
  * take, so the edited object itself and what is already related never show up.
  *
+ * The add button is optional: a filter field has none and posts with its form.
+ *
  * Picking a suggestion only fills the hidden field the form posts and enables the
  * add button: the relation is written when the operator clicks +, so a stray
  * click in the list adds nothing. Typing again clears the pick.
  */
 export default class extends Controller {
-    static targets = ['input', 'value', 'submit', 'menu'];
+    static targets = ['input', 'value', 'submit', 'menu', 'fallback', 'widget'];
 
     static values = {
         url: String,
@@ -18,6 +20,17 @@ export default class extends Controller {
     };
 
     connect() {
+        // A picker with a no-JavaScript fallback (a plain select) swaps it for the search
+        // field: the select stops posting, the hidden value takes over.
+        if (this.hasFallbackTarget && this.hasWidgetTarget) {
+            this.fallbackTarget.classList.add('d-none');
+            this.fallbackTarget.querySelectorAll('select, input').forEach((field) => {
+                field.disabled = true;
+            });
+            this.widgetTarget.classList.remove('d-none');
+            this.valueTarget.disabled = false;
+        }
+
         this.highlightedIndex = -1;
         this.items = [];
         this.debounce = null;
@@ -178,13 +191,17 @@ export default class extends Controller {
     pick(item) {
         this.valueTarget.value = String(item.id);
         this.inputTarget.value = this.label(item);
-        this.submitTarget.disabled = false;
+        if (this.hasSubmitTarget) {
+            this.submitTarget.disabled = false;
+        }
         this.closeMenu();
     }
 
     unpick() {
         this.valueTarget.value = '';
-        this.submitTarget.disabled = true;
+        if (this.hasSubmitTarget) {
+            this.submitTarget.disabled = true;
+        }
     }
 
     openMenu() {

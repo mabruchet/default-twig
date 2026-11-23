@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Tests\Http;
 
+use BackOfficeDefaultTwigBundle\Repository\CompanyRepository;
 use BackOfficeDefaultTwigBundle\Tests\Support\SaleUnitRestrictedAdmin;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -415,6 +416,39 @@ final class CompanyBackOfficeTest extends WebIntegrationTestCase
         self::assertStringContainsString('Acme Filter', $crawler->filter('[data-testid="bo-customer-company-link"]')->first()->text());
     }
 
+    public function testAnyCompanyIsFoundByItsNameInTheFilterEvenBeyondTheFirstTwoHundred(): void
+    {
+        for ($i = 0; $i < CompanyRepository::CHOICE_LIMIT + 5; ++$i) {
+            $this->company(\sprintf('Bulk %03d', $i));
+        }
+        $last = $this->company('Zzz Beyond The Limit', ['siret' => '99999999999999']);
+        $buyer = $this->buyer($last, 'company_admin', 'Zora', 'Faraway');
+
+        $this->client->request('GET', self::LIST_URL.'/search?q='.urlencode('beyond the'));
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        $found = json_decode((string) $this->client->getResponse()->getContent(), true, 512, \JSON_THROW_ON_ERROR);
+        self::assertSame([['id' => $last->getId(), 'title' => 'Zzz Beyond The Limit', 'ref' => '99999999999999']], $found, 'A company ranked after the 200 first by name is found.');
+
+        $this->client->request('GET', self::LIST_URL.'/search?q=99999999999999');
+        $found = json_decode((string) $this->client->getResponse()->getContent(), true, 512, \JSON_THROW_ON_ERROR);
+        self::assertSame([$last->getId()], array_column($found, 'id'), 'The SIRET is searched too.');
+
+        $this->client->request('GET', self::LIST_URL.'/search?q=Bulk');
+        $found = json_decode((string) $this->client->getResponse()->getContent(), true, 512, \JSON_THROW_ON_ERROR);
+        self::assertCount(CompanyRepository::SEARCH_LIMIT, $found, 'The answer is bounded.');
+        self::assertSame('Bulk 000', $found[0]['title'], 'The answer is sorted by name.');
+
+        $this->client->request('GET', self::LIST_URL.'/search?q='.urlencode('100%'));
+        self::assertSame([], json_decode((string) $this->client->getResponse()->getContent(), true, 512, \JSON_THROW_ON_ERROR), 'A percent sign is no wildcard.');
+
+        $crawler = $this->client->request('GET', '/admin/customers?company_id='.$last->getId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString($buyer->getEmail(), $crawler->filter('table')->text());
+        self::assertSame('Zzz Beyond The Limit', $crawler->filter('[data-testid="customer-filter-company-input"]')->attr('value'), 'The filter names the chosen company.');
+        self::assertSame((string) $last->getId(), $crawler->filter('[data-testid="customer-filter-company-value"]')->attr('value'));
+        self::assertSame((string) $last->getId(), $crawler->filter('[data-testid="customer-filter-company-id"] option[selected]')->attr('value'), 'Without JavaScript, the select still holds the chosen company.');
+    }
+
     public function testTheCustomerListGivesNoClueAboutTheCompaniesToAnAdministratorWhoMayNotViewThem(): void
     {
         $acme = $this->company('Hidden Filter');
@@ -748,6 +782,7 @@ final class CompanyBackOfficeTest extends WebIntegrationTestCase
 
         return [
             ['GET', self::LIST_URL, []],
+            ['GET', self::LIST_URL.'/search?q=a', []],
             ['GET', $base, []],
             ['GET', $base.'?tab=buyers', []],
             ['GET', $base.'?tab=addresses', []],

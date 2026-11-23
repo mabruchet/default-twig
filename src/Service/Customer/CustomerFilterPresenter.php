@@ -66,7 +66,9 @@ final readonly class CustomerFilterPresenter
             'group_options' => $groups,
             'tag_options' => $tags,
             'company_filter_visible' => $this->companyLinks->isVisible(),
-            'company_options' => $this->companyLinks->isVisible() ? $this->catalog->companies() : [],
+            'company_options' => $this->companyLinks->isVisible() ? $this->companyOptions($filters->companyId) : [],
+            'selected_company_name' => $this->companyLinks->isVisible() && null !== $filters->companyId ? $this->catalog->companyName($filters->companyId) : '',
+            'company_search_url' => $this->companyLinks->isVisible() ? $this->urls->generate('admin.company.search') : '',
             'in_company_value' => $this->triStateValue($filters->inCompany),
             'selected_company_id' => $filters->companyId,
             'tristate_options' => $this->tristateOptions(),
@@ -378,6 +380,28 @@ final readonly class CustomerFilterPresenter
     private function formatMoney(float $value, string $locale): string
     {
         return $this->money->format($value, $locale);
+    }
+
+    /**
+     * The choices of the no-JavaScript select: the first companies, and the chosen one even when
+     * it is beyond them, so the filter in the address still reads as chosen.
+     *
+     * @return list<array{id: int, title: string}>
+     */
+    private function companyOptions(?int $selectedId): array
+    {
+        $options = $this->catalog->companies();
+        if (null === $selectedId) {
+            return $options;
+        }
+
+        foreach ($options as $option) {
+            if ($option['id'] === $selectedId) {
+                return $options;
+            }
+        }
+
+        return [...$options, ['id' => $selectedId, 'title' => $this->catalog->companyName($selectedId)]];
     }
 
     private function triStateValue(?bool $value): string

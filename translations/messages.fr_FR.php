@@ -4032,6 +4032,8 @@ return [
     'Belongs to a company' => 'Appartient à une société',
     'Belongs to no company' => 'N\'appartient à aucune société',
     'Any company' => 'Toutes les sociétés',
+    'No matching company.' => 'Aucune société correspondante.',
+    'Any company: search by name or SIRET…' => 'Toutes les sociétés : rechercher par nom ou SIRET…',
     'Placed by' => 'Passée par',
     'Lowercase letters, digits, dots, dashes and underscores. It cannot change once the role exists.' => 'Minuscules, chiffres, points, tirets et soulignés. Il ne change plus une fois le rôle créé.',
     'Permission' => 'Permission',

@@ -23,6 +23,7 @@ use BackOfficeDefaultTwigBundle\Service\Company\CompanySheetContext;
 use BackOfficeDefaultTwigBundle\Service\Company\CompanyWriteGate;
 use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\ListSort;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -98,6 +99,21 @@ final class CompanyController
             'sort_field' => $sort->field,
             'sort_direction' => $sort->direction,
         ]));
+    }
+
+    #[Route('/search', name: 'search', methods: ['GET'])]
+    public function search(Request $request): JsonResponse
+    {
+        if ($this->access->check(CompanyWriteGate::RESOURCE, [], AccessManager::VIEW)) {
+            return new JsonResponse([], Response::HTTP_FORBIDDEN);
+        }
+
+        $items = [];
+        foreach ($this->companies->searchByName((string) $request->query->get('q', '')) as $company) {
+            $items[] = ['id' => $company['id'], 'title' => $company['name'], 'ref' => $company['siret']];
+        }
+
+        return new JsonResponse($items);
     }
 
     #[Route('/create', name: 'create', methods: ['POST'])]

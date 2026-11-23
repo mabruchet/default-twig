@@ -343,12 +343,41 @@
                                     <option value="with"{% if filters.in_company_value == 'with' %} selected{% endif %}>{{ 'Belongs to a company'|trans }}</option>
                                     <option value="without"{% if filters.in_company_value == 'without' %} selected{% endif %}>{{ 'Belongs to no company'|trans }}</option>
                                 </select>
-                                <select name="company_id" class="form-select form-select-sm" aria-label="{{ 'Company'|trans }}" data-testid="customer-filter-company-id">
-                                    <option value="">{{ 'Any company'|trans }}</option>
-                                    {% for option in filters.company_options %}
-                                        <option value="{{ option.id }}"{% if option.id == filters.selected_company_id %} selected{% endif %}>{{ option.title }}</option>
-                                    {% endfor %}
-                                </select>
+                                {# The search field is an enhancement over the select, which stays in the form
+                                   and carries the filter without JavaScript. #}
+                                <div data-controller="bo-relation-picker"
+                                     data-bo-relation-picker-url-value="{{ filters.company_search_url }}"
+                                     data-bo-relation-picker-empty-label-value="{{ 'No matching company.'|trans }}">
+                                    <div data-bo-relation-picker-target="fallback">
+                                        <select name="company_id" class="form-select form-select-sm" aria-label="{{ 'Company'|trans }}" data-testid="customer-filter-company-id">
+                                            <option value="">{{ 'Any company'|trans }}</option>
+                                            {% for option in filters.company_options %}
+                                                <option value="{{ option.id }}"{% if option.id == filters.selected_company_id %} selected{% endif %}>{{ option.title }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="bo-relation-picker d-none" data-bo-relation-picker-target="widget" data-testid="customer-filter-company-search">
+                                        <input type="hidden" name="company_id" value="{{ filters.selected_company_id }}" disabled
+                                               data-bo-relation-picker-target="value" data-testid="customer-filter-company-value">
+                                        <input type="text"
+                                               class="form-control form-control-sm"
+                                               autocomplete="off"
+                                               role="combobox"
+                                               aria-autocomplete="list"
+                                               aria-expanded="false"
+                                               aria-controls="customer-filter-company-menu"
+                                               aria-label="{{ 'Company'|trans }}"
+                                               placeholder="{{ 'Any company: search by name or SIRET…'|trans }}"
+                                               value="{{ filters.selected_company_name }}"
+                                               data-testid="customer-filter-company-input"
+                                               data-bo-relation-picker-target="input"
+                                               data-action="input->bo-relation-picker#search focus->bo-relation-picker#open blur->bo-relation-picker#close keydown->bo-relation-picker#key">
+                                        <ul class="bo-tag-picker__menu bo-relation-picker__menu d-none"
+                                            id="customer-filter-company-menu"
+                                            role="listbox"
+                                            data-bo-relation-picker-target="menu"></ul>
+                                    </div>
+                                </div>
                             </fieldset>
                         </div>
                     {% endif %}
