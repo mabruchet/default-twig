@@ -45,6 +45,7 @@ use Thelia\Domain\Localization\VisitorCountry\VisitorCountryMode;
 use Thelia\Domain\Localization\VisitorCountry\VisitorCountrySource;
 use Thelia\Domain\Media\Video\VideoProvider;
 use Thelia\Domain\Pricing\PriceVisibility\PriceDisplayMode;
+use Thelia\Domain\Quote\Enum\QuoteMode;
 use Thelia\Domain\Taxation\Enum\VatExemptionMode;
 
 final class ConfigStoreType extends AbstractType
@@ -222,6 +223,22 @@ final class ConfigStoreType extends AbstractType
                     $this->translator->trans('Enabled, except for products that require an account') => GuestCheckoutMode::EnabledUnlessProductForbids->value,
                 ],
                 'placeholder' => false,
+            ])
+            ->add('quote_mode', ChoiceType::class, [
+                'constraints' => [new NotBlank()],
+                'label' => $this->translator->trans('Quotes'),
+                'help' => $this->translator->trans('Lets a buyer ask for a quote from a cart, and negotiate it with the shop. In the quote-only mode a cart can no longer be ordered straight away.'),
+                'choices' => [
+                    $this->translator->trans('Disabled — no quote, carts are ordered as they are') => QuoteMode::Disabled->value,
+                    $this->translator->trans('Alongside — a buyer may ask for a quote or order the cart straight away') => QuoteMode::Alongside->value,
+                    $this->translator->trans('Quote only — a cart is only ordered through a quote') => QuoteMode::Only->value,
+                ],
+                'placeholder' => false,
+            ])
+            ->add('quote_validity_days', IntegerType::class, [
+                'constraints' => [new NotBlank(), new Range(min: 1, max: 3650)],
+                'label' => $this->translator->trans('Validity of a quote (days)'),
+                'help' => $this->translator->trans('The number of days a quote can be accepted after it is sent, unless the shop picks another last day when it sends it.'),
             ])
             ->add('price_display_mode', ChoiceType::class, [
                 'constraints' => [new NotBlank()],

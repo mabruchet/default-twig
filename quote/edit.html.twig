@@ -1,0 +1,28 @@
+{% extends '@BackOfficeDefaultTwig/quote/view.html.twig' %}
+
+{% block title %}{{ 'Price the quote'|trans }} {{ quote.ref }}{% endblock %}
+{% block body_testid %}quote-edit{% endblock %}
+
+{# Already on the screen the button leads to. #}
+{% block negotiate_button %}{% endblock %}
+
+{# The lines of a draft are the fields of the form below. #}
+{% block quote_lines %}{% if not negotiation %}{{ parent() }}{% endif %}{% endblock %}
+{% block quote_note %}{% if not negotiation %}{{ parent() }}{% endif %}{% endblock %}
+
+{% block quote_negotiation %}
+    {% if negotiation %}
+        {{ include('@BackOfficeDefaultTwig/quote/_negotiation.html.twig') }}
+    {% else %}
+        <div class="card mb-3" data-testid="quote-negotiation">
+            <div class="card-body d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                {% if can_resume %}
+                    <span data-testid="quote-negotiation-sent">{{ 'The revision the quote stands at was sent: it cannot be changed. The next one starts from its lines.'|trans }}</span>
+                    {{ include('@BackOfficeDefaultTwig/quote/_resume_form.html.twig', { number: current_revision_number, testid: 'quote-new-revision', new_revision: true, size: '', variant: 'btn-primary' }) }}
+                {% else %}
+                    <span class="text-muted" data-testid="quote-negotiation-locked">{{ 'This quote cannot be changed in its present state.'|trans }}</span>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

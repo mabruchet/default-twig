@@ -41,6 +41,7 @@ use Thelia\Domain\Checkout\Enum\GuestCheckoutMode;
 use Thelia\Domain\Localization\VisitorCountry\VisitorCountrySettings;
 use Thelia\Domain\Media\Video\VideoProviderResolver;
 use Thelia\Domain\Pricing\PriceVisibility\PriceDisplayMode;
+use Thelia\Domain\Quote\Enum\QuoteMode;
 use Thelia\Domain\Taxation\Enum\VatExemptionMode;
 use Thelia\Model\ConfigQuery;
 use Twig\Environment;
@@ -182,6 +183,8 @@ final class ConfigStoreController
             'store_city' => ConfigQuery::read('store_city'),
             'store_country' => ConfigQuery::read('store_country'),
             'guest_checkout_mode' => ConfigQuery::read('guest_checkout_mode', GuestCheckoutMode::Disabled->value),
+            'quote_mode' => QuoteMode::fromConfig((string) ConfigQuery::read('quote_mode', QuoteMode::Disabled->value))->value,
+            'quote_validity_days' => self::quoteValidityDays(),
             'admin_two_factor_required' => (string) ConfigQuery::read('admin_two_factor_required', '0'),
             'price_display_mode' => PriceDisplayMode::fromShopConfiguration()->value,
             'shared_cache_mode' => SharedCacheMode::fromShopConfiguration()->value,
@@ -203,6 +206,13 @@ final class ConfigStoreController
         }
 
         return $data;
+    }
+
+    private static function quoteValidityDays(): int
+    {
+        $days = (int) ConfigQuery::read('quote_validity_days', '30');
+
+        return $days > 0 ? $days : 30;
     }
 
     /**

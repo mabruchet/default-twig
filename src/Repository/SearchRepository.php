@@ -578,7 +578,7 @@ final readonly class SearchRepository
      *
      * @return array<int, string>
      */
-    private function attributeLabels(array $combinationIds, string $locale, string $fallbackLocale): array
+    public function attributeLabels(array $combinationIds, string $locale, string $fallbackLocale): array
     {
         if ([] === $combinationIds) {
             return [];

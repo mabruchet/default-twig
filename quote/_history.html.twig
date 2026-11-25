@@ -1,0 +1,41 @@
+<div class="card mb-3" data-testid="quote-history">
+    <div class="card-header">{{ 'Revisions'|trans }}</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'Revision'|trans }}</th>
+                        <th scope="col">{{ 'Written by'|trans }}</th>
+                        <th scope="col">{{ 'Date'|trans }}</th>
+                        <th scope="col">{{ 'State'|trans }}</th>
+                        <th scope="col" class="text-end">{{ 'Total with taxes'|trans }}</th>
+                        <th scope="col" class="text-end">{{ 'Actions'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in history %}
+                        <tr data-testid="quote-history-row-{{ row.number }}" data-author="{{ row.author }}" data-revision-state="{{ row.state }}">
+                            <th scope="row" data-testid="quote-history-number">
+                                {{ row.number }}
+                                {% if row.is_current %}<span class="badge text-bg-primary">{{ 'Current'|trans }}</span>{% endif %}
+                            </th>
+                            <td data-testid="quote-history-author">{{ row.author_label }}</td>
+                            <td data-testid="quote-history-date">{{ row.date ? row.date|format_datetime('short', 'short') : '-' }}</td>
+                            <td data-testid="quote-history-state">{{ row.state_label }}</td>
+                            <td class="text-end" dir="ltr" data-testid="quote-history-total">{{ row.total ?? '-' }}</td>
+                            <td class="text-end text-nowrap">
+                                {% if row.url %}
+                                    <a href="{{ row.url }}" class="btn btn-sm btn-outline-secondary" data-testid="quote-history-open">{% if row.state == 'draft' %}{{ 'Continue writing'|trans }}{% else %}{{ 'Open'|trans }}{% endif %}</a>
+                                {% endif %}
+                                {% if row.can_resume %}
+                                    {{ include('@BackOfficeDefaultTwig/quote/_resume_form.html.twig', { number: row.number, testid: 'quote-history-resume' }) }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

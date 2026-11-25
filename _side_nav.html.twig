@@ -76,9 +76,13 @@
                 </li>
             {% endif %}
 
-            {% if is_granted('VIEW', 'admin.order') %}
-                {% set active = nav.is_section(current_path, ['/admin/order']) %}
-                {% set counts = sidebar_order_counts(app.request.locale|default('en_US')) %}
+            {#- The quotes sit under the orders, and an administrator who reads quotes without reading
+                orders still gets the section, with the quotes alone. -#}
+            {% set canViewOrders = is_granted('VIEW', 'admin.order') %}
+            {% set canViewQuotes = is_granted('VIEW', 'admin.quote') %}
+            {% if canViewOrders or canViewQuotes %}
+                {% set active = nav.is_section(current_path, ['/admin/order', '/admin/quotes']) %}
+                {% set counts = canViewOrders ? sidebar_order_counts(app.request.locale|default('en_US')) : null %}
                 <li class="nav-item" data-testid="bo-nav-order">
                     <a href="#bo-nav-order-collapse" data-bs-toggle="collapse" aria-expanded="{{ active ? 'true' : 'false' }}" class="nav-link bo-side-nav__toggle {{ active ? 'active' : '' }}">
                         <i class="bi bi-cart3 me-2" aria-hidden="true"></i>
@@ -86,20 +90,25 @@
                         <i class="bi bi-chevron-right ms-auto bo-side-nav__chevron" aria-hidden="true"></i>
                     </a>
                     <ul class="nav flex-column collapse {{ active ? 'show' : '' }}" id="bo-nav-order-collapse">
-                        <li>
-                            <a class="nav-link" href="{{ path('admin.order.list') }}">
-                                {{ 'All orders'|trans }}
-                                <span class="bo-side-nav__badge bo-side-nav__badge--neutral" data-testid="bo-nav-order-count-total">{{ counts.total }}</span>
-                            </a>
-                        </li>
-                        {% for status in counts.statuses %}
+                        {% if canViewOrders %}
                             <li>
-                                <a class="nav-link" href="{{ path('admin.order.list') }}?status_id={{ status.id }}">
-                                    {{ status.title }}
-                                    <span class="bo-side-nav__badge" style="background-color: {{ status.color }}; color: {{ contrast_text_color(status.color) }};" data-testid="bo-nav-order-count-{{ status.code }}">{{ status.count }}</span>
+                                <a class="nav-link" href="{{ path('admin.order.list') }}">
+                                    {{ 'All orders'|trans }}
+                                    <span class="bo-side-nav__badge bo-side-nav__badge--neutral" data-testid="bo-nav-order-count-total">{{ counts.total }}</span>
                                 </a>
                             </li>
-                        {% endfor %}
+                            {% for status in counts.statuses %}
+                                <li>
+                                    <a class="nav-link" href="{{ path('admin.order.list') }}?status_id={{ status.id }}">
+                                        {{ status.title }}
+                                        <span class="bo-side-nav__badge" style="background-color: {{ status.color }}; color: {{ contrast_text_color(status.color) }};" data-testid="bo-nav-order-count-{{ status.code }}">{{ status.count }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% endif %}
+                        {% if canViewQuotes %}
+                            <li><a class="nav-link" href="{{ path('admin.quote.list') }}" data-testid="bo-nav-order-quotes">{{ 'Quotes'|trans }}</a></li>
+                        {% endif %}
                         {% for fragment in hook_block('main.top-menu-order', { fields: 'id,class,url,title' }) %}
                             <li><a class="nav-link" href="{{ fragment.url }}"{% if fragment.id %} id="{{ fragment.id }}"{% endif %}>{{ fragment.title }}</a></li>
                         {% endfor %}

@@ -39,6 +39,16 @@
                         </button>
                     </form>
                 {% endif %}
+                {# The shop writes a quote for an account that can sign in: a guest has none. #}
+                {% if not customer.isGuest and is_granted('CREATE', 'admin.quote') %}
+                    <form method="post" action="{{ path('admin.quote.create') }}" class="d-inline" data-testid="customer-quote-form">
+                        <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" data-testid="customer-quote-button">
+                            <i class="bi bi-file-earmark-plus" aria-hidden="true"></i> {{ 'Create a quote'|trans }}
+                        </button>
+                    </form>
+                {% endif %}
                 {# A module opening an order for the customer puts its button here. #}
                 {{ safe_hook('customer-edit.actions', { customer_id: customer.id, location: 'customer-edit-actions' }) }}
                 {% include '@BackOfficeDefaultTwig/_prev_next_buttons.html.twig' with {

@@ -15,16 +15,19 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Tests\Unit\Admin;
 
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFailureMessage;
+use Doctrine\DBAL\Exception\InvalidArgumentException as DbalInvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Doctrine\DBAL\Exception\InvalidArgumentException as DbalInvalidArgumentException;
 use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Exception\RuntimeException as PropelRuntimeException;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
-use Thelia\Core\File\Exception\FileNotFoundException;
-use Twig\Error\LoaderError;
 use Symfony\Component\Translation\IdentityTranslator;
+use Symfony\Component\Translation\Loader\ArrayLoader;
+use Symfony\Component\Translation\Translator;
+use Thelia\Core\File\Exception\FileNotFoundException;
+use Thelia\Domain\Order\Exception\OrderStatusRefusedByQuoteException;
+use Twig\Error\LoaderError;
 
 final class AdminFailureMessageTest extends TestCase
 {
@@ -77,5 +80,25 @@ final class AdminFailureMessageTest extends TestCase
     public function testWhatTheShopSaysOfARefusalIsShown(): void
     {
         self::assertSame('The default currency cannot be deleted.', AdminFailureMessage::of(new \RuntimeException('The default currency cannot be deleted.'), new IdentityTranslator()));
+    }
+
+    public function testTheRefusalOfAReactivationHeldByAQuoteIsShownInTheLanguageOfTheAdministrator(): void
+    {
+        $translator = new Translator('fr_FR');
+        $translator->addLoader('array', new ArrayLoader());
+        $translator->addResource('array', [OrderStatusRefusedByQuoteException::MESSAGE => 'Cette commande ne peut pas quitter son statut annulé.'], 'fr_FR');
+
+        $message = AdminFailureMessage::of(new OrderStatusRefusedByQuoteException('ORD1', 'canceled', 'not_paid'), $translator);
+
+        self::assertSame('Cette commande ne peut pas quitter son statut annulé.', $message);
+    }
+
+    public function testTheCataloguesTheBackOfficeShipsTranslateThatRefusal(): void
+    {
+        foreach (['fr_FR', 'de_DE'] as $locale) {
+            $catalogue = require \dirname(__DIR__, 3).'/translations/messages.'.$locale.'.php';
+
+            self::assertArrayHasKey(OrderStatusRefusedByQuoteException::MESSAGE, $catalogue, $locale);
+        }
     }
 }

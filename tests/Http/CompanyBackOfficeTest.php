@@ -573,7 +573,7 @@ final class CompanyBackOfficeTest extends WebIntegrationTestCase
 
         $shipped = $this->sharedRole('buyer');
         $this->client->request('POST', self::ROLES_URL.'/save', ['_token' => $token, 'role_id' => (string) $shipped->getId(), 'permissions' => ['order.place', 'company.edit']]);
-        self::assertSame(['order.place', 'order.view_own'], CompanyRoleQuery::create()->findPk($shipped->getId())?->getPermissionList(), 'An installed role is not changed.');
+        self::assertSame(['order.place', 'order.view_own', 'quote.request'], CompanyRoleQuery::create()->findPk($shipped->getId())?->getPermissionList(), 'An installed role is not changed.');
         $this->client->request('POST', self::ROLES_URL.'/delete', ['_token' => $token, 'role_id' => (string) $shipped->getId()]);
         self::assertNotNull(CompanyRoleQuery::create()->findPk($shipped->getId()), 'An installed role is not deleted.');
 

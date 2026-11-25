@@ -1,0 +1,115 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Quotes'|trans }}{% endblock %}
+{% block body_testid %}quote-list{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Quotes'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="quotes-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Quotes'|trans }}</h1>
+        </div>
+
+        <p class="text-muted">
+            {{ 'A quote is what a buyer asks the shop for before ordering, and what the shop writes for a customer. The shop prices it line by line, the buyer accepts it, counters it or turns it down, and an accepted quote becomes an order. To write a quote for a customer, open the sheet of the customer.'|trans }}
+        </p>
+
+        {% if total == 0 and filters.isEmpty %}
+            <div class="card" data-testid="quotes-empty">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-file-earmark-text fs-1 text-muted" aria-hidden="true"></i>
+                    <h2 class="h5 mt-3">{{ 'No quote yet'|trans }}</h2>
+                    <p class="text-muted mb-0">{{ 'The quotes asked for by the buyers, and the ones written by the shop, are listed here.'|trans }}</p>
+                </div>
+            </div>
+        {% else %}
+            <form method="get" action="{{ path('admin.quote.list') }}" class="row g-2 mb-3" data-testid="quotes-filters">
+                <div class="col-md-4">
+                    <label class="form-label" for="quote-filter-q">{{ 'Reference or customer'|trans }}</label>
+                    <input type="search" name="q" id="quote-filter-q" class="form-control" value="{{ filters.search }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="quote-filter-state">{{ 'State'|trans }}</label>
+                    <select name="state" id="quote-filter-state" class="form-select">
+                        <option value="">{{ 'All'|trans }}</option>
+                        {% for option in state_options %}
+                            <option value="{{ option.value }}"{% if filters.state is not null and filters.state.value == option.value %} selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if company_options %}
+                    <div class="col-md-3">
+                        <label class="form-label" for="quote-filter-company">{{ 'Company'|trans }}</label>
+                        <select name="company_id" id="quote-filter-company" class="form-select">
+                            <option value="">{{ 'All'|trans }}</option>
+                            {% for company in company_options %}
+                                <option value="{{ company.id }}"{% if filters.companyId == company.id %} selected{% endif %}>{{ company.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+                <div class="col-md-3">
+                    <label class="form-label" for="quote-filter-min-total">{{ 'Total with taxes'|trans }}</label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" min="0" name="min_total" id="quote-filter-min-total" class="form-control" value="{{ filters.minTotal }}" placeholder="{{ 'From'|trans }}" aria-label="{{ 'Total from'|trans }}">
+                        <input type="number" step="0.01" min="0" name="max_total" id="quote-filter-max-total" class="form-control" value="{{ filters.maxTotal }}" placeholder="{{ 'To'|trans }}" aria-label="{{ 'Total to'|trans }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="quote-filter-valid-from">{{ 'Valid until'|trans }}</label>
+                    <div class="input-group">
+                        <input type="date" name="valid_from" id="quote-filter-valid-from" class="form-control" value="{{ filters.validFrom ? filters.validFrom|date('Y-m-d') : '' }}" aria-label="{{ 'Valid from'|trans }}">
+                        <input type="date" name="valid_to" id="quote-filter-valid-to" class="form-control" value="{{ filters.validTo ? filters.validTo|date('Y-m-d') : '' }}" aria-label="{{ 'Valid to'|trans }}">
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary w-100" data-testid="quotes-filter-submit">{{ 'Filter'|trans }}</button>
+                </div>
+                {% if not filters.isEmpty %}
+                    <div class="col-md-2 d-flex align-items-end">
+                        <a href="{{ path('admin.quote.list') }}" class="btn btn-link w-100" data-testid="quotes-filter-clear">{{ 'Clear the filters'|trans }}</a>
+                    </div>
+                {% endif %}
+            </form>
+
+            <p class="text-body-secondary small" data-testid="quotes-total">{{ '%count% quote(s)'|trans({'%count%': total}) }}</p>
+
+            {{ component('BoDataTable', {
+                id: 'quotes',
+                columns: [
+                    column_html('ref_html', 'Reference'|trans, 'start', 'ref'),
+                    column_html('customer_html', 'Customer'|trans, 'start'),
+                    column_html('company_html', 'Company'|trans, 'start', visibleFrom: 'xl'),
+                    column_badge('state', 'State'|trans, { draft: 'secondary', requested: 'info', quoted: 'primary', countered: 'warning', accepted: 'success', rejected: 'danger', expired: 'dark', ordered: 'success' }, 'center', 'state_label', sortKey: 'state'),
+                    column_html('total_html', 'Total with taxes'|trans, 'end', 'total'),
+                    column_html('valid_until_html', 'Valid until'|trans, 'start', 'valid_until', visibleFrom: 'lg'),
+                    column_html('created_html', 'Created on'|trans, 'start', 'created_at', visibleFrom: 'lg'),
+                    column_actions('_actions', 'Actions'|trans),
+                ],
+                rows: rows,
+                emptyMessage: 'No quote matches.'|trans,
+                sortField: sort_field,
+                sortDirection: sort_direction,
+            }) }}
+
+            {% if last_page > 1 %}
+                {{ component('BoPagination', {
+                    route: 'admin.quote.list',
+                    currentPage: current_page,
+                    lastPage: last_page,
+                    routeParams: route_params,
+                    ariaLabel: 'Quotes pagination'|trans,
+                    testid: 'quotes-pagination',
+                }) }}
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}

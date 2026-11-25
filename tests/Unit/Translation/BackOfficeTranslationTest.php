@@ -18,8 +18,11 @@ use BackOfficeDefaultTwigBundle\Controller\Company\CompanyBuyerController;
 use BackOfficeDefaultTwigBundle\Controller\Company\CompanyController;
 use BackOfficeDefaultTwigBundle\Controller\Company\CompanyRoleController;
 use BackOfficeDefaultTwigBundle\Controller\Configuration\CustomerGroupController;
+use BackOfficeDefaultTwigBundle\Controller\Quote\QuoteController;
+use BackOfficeDefaultTwigBundle\Controller\Quote\QuoteNegotiationController;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFailureMessage;
 use BackOfficeDefaultTwigBundle\Service\Company\CompanyWriteGate;
+use BackOfficeDefaultTwigBundle\Service\Quote\QuoteWriteGate;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Finder\Finder;
@@ -46,25 +49,25 @@ final class BackOfficeTranslationTest extends TestCase
 
     /** The texts each catalogue lacks, as measured when it was last changed. */
     private const KNOWN_GAPS = [
-        'ar_SA' => 2267,
-        'cs_CZ' => 2120,
-        'de_DE' => 2107,
-        'el_GR' => 2267,
-        'es_ES' => 2049,
-        'fa_IR' => 2267,
-        'he_IL' => 2267,
-        'hu_HU' => 2267,
-        'id_ID' => 2267,
-        'it_IT' => 2049,
-        'nl_NL' => 2120,
-        'pl_PL' => 2267,
-        'pt_BR' => 2267,
-        'pt_PT' => 2267,
-        'ru_RU' => 2120,
-        'sk_SK' => 2267,
-        'tr_TR' => 2267,
-        'uk_UA' => 2267,
-        'zh_CN' => 2267,
+        'ar_SA' => 2372,
+        'cs_CZ' => 2225,
+        'de_DE' => 2103,
+        'el_GR' => 2372,
+        'es_ES' => 2154,
+        'fa_IR' => 2372,
+        'he_IL' => 2372,
+        'hu_HU' => 2372,
+        'id_ID' => 2372,
+        'it_IT' => 2154,
+        'nl_NL' => 2225,
+        'pl_PL' => 2372,
+        'pt_BR' => 2372,
+        'pt_PT' => 2372,
+        'ru_RU' => 2225,
+        'sk_SK' => 2372,
+        'tr_TR' => 2372,
+        'uk_UA' => 2372,
+        'zh_CN' => 2372,
     ];
 
     #[DataProvider('catalogues')]
@@ -189,6 +192,32 @@ final class BackOfficeTranslationTest extends TestCase
             'Role saved.',
             'Role deleted.',
             ...array_values(CompanyPermission::labels()),
+        ]));
+    }
+
+    /**
+     * The quote screens: the names of the actions their controller passes to the gate and the
+     * messages the gate shows once an action went through. French is complete; the other
+     * catalogues are counted by KNOWN_GAPS, as for every text.
+     */
+    public function testTheTextsOfTheQuoteScreensNamedApartAreInFrench(): void
+    {
+        self::assertSame([], self::missingFrom('fr_FR', [
+            QuoteWriteGate::GENERIC_FAILURE,
+            QuoteController::CREATION_LABEL,
+            QuoteController::EXTENSION_LABEL,
+            QuoteController::REMINDER_LABEL,
+            QuoteController::DUPLICATION_LABEL,
+            QuoteNegotiationController::SAVE_LABEL,
+            QuoteNegotiationController::SEND_LABEL,
+            QuoteNegotiationController::RESUME_LABEL,
+            'Quote created.',
+            'Quote extended.',
+            'The buyer was reminded.',
+            'Quote duplicated.',
+            'Quote saved.',
+            'Quote sent to the buyer.',
+            'A new revision is ready to be written.',
         ]));
     }
 

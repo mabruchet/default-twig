@@ -19,6 +19,7 @@ use Propel\Runtime\Exception\ExceptionInterface as PropelExceptionInterface;
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Thelia\Domain\Order\Exception\OrderStatusRefusedByQuoteException;
 use Thelia\Mailer\TransportCredentials;
 use Twig\Error\LoaderError;
 
@@ -34,6 +35,10 @@ final class AdminFailureMessage
 
     public static function of(\Throwable $exception, TranslatorInterface $translator): string
     {
+        if ($exception instanceof OrderStatusRefusedByQuoteException) {
+            return $translator->trans(OrderStatusRefusedByQuoteException::MESSAGE);
+        }
+
         for ($cause = $exception; null !== $cause; $cause = $cause->getPrevious()) {
             if ($cause instanceof \PDOException
                 || $cause instanceof PropelExceptionInterface

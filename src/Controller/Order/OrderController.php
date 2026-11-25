@@ -64,6 +64,7 @@ use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Exception\TokenAuthenticationException;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\Order\Exception\OrderStatusRefusedByQuoteException;
 use Thelia\Domain\Order\Exception\PickingSlipException;
 use Thelia\Domain\Order\Service\OrderStatusTransitionGuard;
 use Thelia\Domain\Payment\Enum\PaymentTransactionState;
@@ -278,6 +279,7 @@ final class OrderController
         $failed = [];
         $holdingAnAuthorization = [];
         $waitingForCapture = [];
+        $heldByAQuote = [];
 
         foreach ($this->orderRepository->findByIds($plan['allowed_ids']) as $order) {
             try {
@@ -289,6 +291,8 @@ final class OrderController
                 $holdingAnAuthorization[] = (string) $order->getRef();
             } catch (CancellationWaitsForCaptureException) {
                 $waitingForCapture[] = (string) $order->getRef();
+            } catch (OrderStatusRefusedByQuoteException) {
+                $heldByAQuote[] = (string) $order->getRef();
             } catch (\Throwable $throwable) {
                 Tlog::getInstance()->error(\sprintf('Bulk status change of order %s failed: %s', (string) $order->getRef(), $throwable->getMessage()));
                 $failed[] = (string) $order->getRef();
@@ -319,6 +323,10 @@ final class OrderController
 
         if ([] !== $waitingForCapture) {
             $this->flash('warning', $this->translator->trans('Not cancelled, a capture waits for the provider, which takes a single one: refund them once it is taken: %refs%', ['%refs%' => implode(', ', $waitingForCapture)]));
+        }
+
+        if ([] !== $heldByAQuote) {
+            $this->flash('warning', $this->translator->trans('Not moved, the quote they were placed from has another order now: %refs%', ['%refs%' => implode(', ', $heldByAQuote)]));
         }
 
         if ([] !== $failed) {

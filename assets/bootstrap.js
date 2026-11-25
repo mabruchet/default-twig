@@ -53,6 +53,7 @@ import BoModulesListController from './controllers/bo-modules-list_controller.js
 import BoOrderAddressModalController from './controllers/bo-order-address-modal_controller.js';
 import BoOrderCancelModalController from './controllers/bo-order-cancel-modal_controller.js';
 import BoOrderEditController from './controllers/bo-order-edit_controller.js';
+import BoQuoteNegotiationController from './controllers/bo-quote-negotiation_controller.js';
 import BoOverflowDropdownController from './controllers/bo-overflow-dropdown_controller.js';
 import BoPermissionMatrixController from './controllers/bo-permission-matrix_controller.js';
 import BoPositionController from './controllers/bo-position_controller.js';
@@ -135,6 +136,7 @@ app.register('bo-modules-list', BoModulesListController);
 app.register('bo-order-address-modal', BoOrderAddressModalController);
 app.register('bo-order-cancel-modal', BoOrderCancelModalController);
 app.register('bo-order-edit', BoOrderEditController);
+app.register('bo-quote-negotiation', BoQuoteNegotiationController);
 app.register('bo-overflow-dropdown', BoOverflowDropdownController);
 app.register('bo-permission-matrix', BoPermissionMatrixController);
 app.register('bo-position', BoPositionController);

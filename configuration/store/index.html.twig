@@ -151,6 +151,14 @@
                         </div>
                     </div>
 
+                    <div class="card mb-4" data-testid="config-store-quotes">
+                        <div class="card-header">{{ 'Quotes'|trans }}</div>
+                        <div class="card-body">
+                            {{ form_row(form.quote_mode, { attr: { 'data-testid': 'config-store-quote-mode' } }) }}
+                            {{ form_row(form.quote_validity_days, { attr: { 'data-testid': 'config-store-quote-validity-days', 'min': 1 } }) }}
+                        </div>
+                    </div>
+
                     <div class="card mb-4" data-testid="config-store-stock">
                         <div class="card-header">{{ 'Stock'|trans }}</div>
                         <div class="card-body">

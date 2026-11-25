@@ -1,0 +1,221 @@
+{% set n = negotiation %}
+<div data-controller="bo-quote-negotiation"
+     data-bo-quote-negotiation-search-url-value="{{ n.search_url }}"
+     data-bo-quote-negotiation-autosave-url-value="{{ n.autosave_url }}"
+     data-bo-quote-negotiation-next-index-value="{{ n.lines|length }}"
+     data-testid="quote-negotiation">
+    <form method="post" action="{{ n.save_url }}" id="quote-negotiation-form"
+          data-bo-quote-negotiation-target="form"
+          data-action="input->bo-quote-negotiation#typed change->bo-quote-negotiation#changed submit->bo-quote-negotiation#submitted keydown->bo-quote-negotiation#keydown"
+          data-search-failed="{{ 'The search failed. Try again.'|trans }}"
+          data-no-result="{{ 'No product matches.'|trans }}"
+          data-saving="{{ 'Saving the draft...'|trans }}"
+          data-saved="{{ 'The draft is saved: the totals are up to date.'|trans }}"
+          data-save-failed="{{ 'The draft could not be saved. What you typed is still on the screen.'|trans }}"
+          data-testid="quote-negotiation-form">
+        <input type="hidden" name="_token" value="{{ assignToken() }}">
+        <input type="hidden" name="edited" value="1">
+
+        <div class="card mb-3" data-testid="quote-lines">
+            <div class="card-header">
+                {{ 'Lines of the revision'|trans }}
+                <span class="badge text-bg-light border" data-testid="quote-revision-number">{{ n.revision.number }}</span>
+                <span class="badge text-bg-secondary">{{ 'Draft'|trans }}</span>
+            </div>
+            <div class="card-body">
+                {% if n.gone_lines %}
+                    <p class="alert alert-warning" data-bo-quote-negotiation-target="goneNotice" data-testid="quote-gone-lines">{{ 'Some lines name a product that is no longer in the catalog: they are left out when the draft is saved.'|trans }}</p>
+                {% endif %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0" data-testid="quote-lines-table">
+                        <caption class="visually-hidden">{{ 'Lines of the revision'|trans }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ 'Product'|trans }}</th>
+                                <th scope="col" class="text-end">{{ 'Catalogue price'|trans }}</th>
+                                <th scope="col" class="text-end">{{ 'Proposed price without taxes'|trans }}</th>
+                                <th scope="col" class="text-end">{{ 'Proposed quantity'|trans }}</th>
+                                {% if n.has_counter_offer %}
+                                    <th scope="col" class="text-end">{{ 'Price asked by the buyer'|trans }}</th>
+                                    <th scope="col" class="text-end">{{ 'Quantity asked by the buyer'|trans }}</th>
+                                {% endif %}
+                                <th scope="col"><span class="visually-hidden">{{ 'Actions'|trans }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody data-bo-quote-negotiation-target="lines">
+                            {% for line in n.lines %}
+                                {% set index = loop.index0 %}
+                                <tr data-testid="quote-line-{{ line.id }}"{{ line.unavailable ? ' data-unavailable' : '' }}>
+                                    <td>
+                                        {% if not line.unavailable %}
+                                            <input type="hidden" name="lines[{{ index }}][item]" value="{{ line.id }}">
+                                            <input type="hidden" name="lines[{{ index }}][pse]" value="{{ line.sale_element_id }}">
+                                        {% endif %}
+                                        <div class="fw-semibold" data-testid="quote-line-title">{{ line.title }}</div>
+                                        <div class="text-muted small">{{ line.sale_element_ref ?: line.ref }}{% if line.combination %} · {{ line.combination }}{% endif %}</div>
+                                        {% if line.unavailable %}<span class="badge text-bg-warning">{{ 'No longer in the catalog'|trans }}</span>{% endif %}
+                                    </td>
+                                    <td class="text-end" dir="ltr" data-testid="quote-line-catalog-price">{{ line.catalog_price }}</td>
+                                    <td class="text-end" style="max-width: 10rem;">
+                                        <label class="visually-hidden" for="quote-line-{{ index }}-price">{{ 'Proposed price without taxes'|trans }} - {{ line.title }}</label>
+                                        <input type="text" inputmode="decimal" class="form-control form-control-sm text-end" id="quote-line-{{ index }}-price" name="lines[{{ index }}][price]" value="{{ line.price }}"{{ line.unavailable ? ' disabled' : '' }} data-testid="quote-line-price-input">
+                                    </td>
+                                    <td class="text-end" style="max-width: 8rem;">
+                                        <label class="visually-hidden" for="quote-line-{{ index }}-quantity">{{ 'Proposed quantity'|trans }} - {{ line.title }}</label>
+                                        <input type="text" inputmode="decimal" class="form-control form-control-sm text-end" id="quote-line-{{ index }}-quantity" name="lines[{{ index }}][quantity]" value="{{ line.quantity }}"{{ line.unavailable ? ' disabled' : '' }} data-testid="quote-line-quantity-input">
+                                    </td>
+                                    {% if n.has_counter_offer %}
+                                        <td class="text-end" dir="ltr" data-testid="quote-line-asked-price">{{ line.asked_price ?? '-' }}</td>
+                                        <td class="text-end" data-testid="quote-line-asked-quantity">{{ line.asked_quantity ?? '-' }}</td>
+                                    {% endif %}
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" data-action="bo-quote-negotiation#removeLine" aria-label="{{ 'Remove this line'|trans }}" data-testid="quote-line-remove">
+                                            <i class="bi bi-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted mb-0 mt-2" data-bo-quote-negotiation-target="empty" data-testid="quote-lines-empty"{{ n.lines ? ' hidden' : '' }}>{{ 'This revision has no line yet.'|trans }}</p>
+
+                <h2 class="h6 mt-4">{{ 'Add a product'|trans }}</h2>
+                <div class="position-relative mb-2">
+                    <label class="visually-hidden" for="quote-product-search">{{ 'Search a product by title or reference'|trans }}</label>
+                    <input type="search" class="form-control" id="quote-product-search" autocomplete="off" minlength="2" maxlength="100"
+                           placeholder="{{ 'Search a product by title or reference'|trans }}"
+                           data-bo-quote-negotiation-target="search" data-action="input->bo-quote-negotiation#searchTyped"
+                           data-testid="quote-product-search">
+                </div>
+                <p class="small mb-2" role="status" hidden data-bo-quote-negotiation-target="searchStatus" data-testid="quote-product-search-status"></p>
+                <ul class="list-group" hidden data-bo-quote-negotiation-target="results" data-testid="quote-product-results"></ul>
+            </div>
+        </div>
+
+        <div class="card mb-3" data-testid="quote-foot">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="quote-discount">{{ 'Discount with taxes'|trans }}</label>
+                        <input type="text" inputmode="decimal" class="form-control text-end" id="quote-discount" name="discount" value="{{ n.discount }}" data-testid="quote-discount-input">
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="quote-postage">{{ 'Postage without taxes'|trans }}</label>
+                        <input type="text" inputmode="decimal" class="form-control text-end" id="quote-postage" name="postage" value="{{ n.postage }}" data-testid="quote-postage-input">
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="quote-delivery-module">{{ 'Delivery module'|trans }}</label>
+                        <select class="form-select" id="quote-delivery-module" name="delivery_module_id" data-testid="quote-delivery-module-input">
+                            <option value="">{{ 'No delivery module'|trans }}</option>
+                            {% for module in n.delivery_modules %}
+                                <option value="{{ module.id }}"{{ n.delivery_module_id == module.id ? ' selected' : '' }}>{{ module.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="quote-valid-until">{{ 'Valid until'|trans }}</label>
+                        <input type="date" class="form-control" id="quote-valid-until" name="valid_until" value="{{ n.valid_until }}" min="{{ n.earliest_valid_until }}" data-testid="quote-valid-until-input">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="quote-merchant-note">{{ 'Note of the shop'|trans }}</label>
+                        <textarea class="form-control" id="quote-merchant-note" name="merchant_note" rows="4" maxlength="20000" data-testid="quote-merchant-note-input">{{ n.merchant_note }}</textarea>
+                        <div class="form-text">{{ 'The buyer reads this note with the quote. It is plain text: tags are removed.'|trans }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3" data-testid="quote-totals" data-bo-quote-negotiation-target="totals">
+            <div class="card-body">
+                <dl class="row mb-0 justify-content-end text-end">
+                    <dt class="col-8 col-md-4 fw-normal">{{ 'Lines without taxes'|trans }}</dt>
+                    <dd class="col-4 col-md-2" dir="ltr" data-total="items_untaxed" data-testid="quote-total-items">{{ n.totals.items_untaxed }}</dd>
+                    <dt class="col-8 col-md-4 fw-normal">{{ 'Postage without taxes'|trans }}</dt>
+                    <dd class="col-4 col-md-2" dir="ltr" data-total="postage_untaxed" data-testid="quote-total-postage">{{ n.totals.postage_untaxed }}</dd>
+                    <dt class="col-8 col-md-4 fw-normal">{{ 'Discount with taxes'|trans }}</dt>
+                    <dd class="col-4 col-md-2" dir="ltr" data-total="discount" data-testid="quote-total-discount">{{ n.totals.discount }}</dd>
+                    <dt class="col-8 col-md-4 fw-normal">{{ 'Discount granted on the lines'|trans }}</dt>
+                    <dd class="col-4 col-md-2" dir="ltr" data-testid="quote-total-granted"><span data-granted="amount">{{ n.granted.amount }}</span> (<span data-granted="percent">{{ n.granted.percent }}</span>)</dd>
+                    <dt class="col-8 col-md-4 fw-normal">{{ 'Total without taxes'|trans }}</dt>
+                    <dd class="col-4 col-md-2" dir="ltr" data-total="total_untaxed" data-testid="quote-total-untaxed">{{ n.totals.total_untaxed }}</dd>
+                    <dt class="col-8 col-md-4">{{ 'Total with taxes'|trans }}</dt>
+                    <dd class="col-4 col-md-2 fw-semibold" dir="ltr" data-total="total_taxed" data-testid="quote-total-taxed">{{ n.totals.total_taxed }}</dd>
+                </dl>
+                <p class="small text-muted text-end mb-0" role="status" aria-live="polite" hidden data-bo-quote-negotiation-target="status" data-testid="quote-autosave-status"></p>
+                <p class="small text-danger text-end mb-0" role="alert" hidden data-bo-quote-negotiation-target="error" data-testid="quote-autosave-error"></p>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-end mb-3" data-testid="quote-negotiation-actions">
+            <button type="submit" class="btn btn-outline-primary" data-testid="quote-save">
+                <i class="bi bi-save" aria-hidden="true"></i> {{ 'Save the draft'|trans }}
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quote-send-modal" data-testid="quote-send-open">
+                <i class="bi bi-send" aria-hidden="true"></i> {{ 'Send to the buyer'|trans }}
+            </button>
+        </div>
+    </form>
+
+    <div class="modal fade" id="quote-send-modal" tabindex="-1" aria-labelledby="quote-send-modal-title" aria-hidden="true" data-testid="quote-send-modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="quote-send-modal-title">{{ 'Send the quote to the buyer'|trans }}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>
+                </div>
+                <div class="modal-body">{{ 'The draft is saved as it is on the screen, then sent to the buyer, who is told by e-mail. A revision that was sent cannot be changed any more.'|trans }}</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ 'Cancel'|trans }}</button>
+                    <button type="submit" form="quote-negotiation-form" formaction="{{ n.send_url }}" class="btn btn-primary" data-testid="quote-send">
+                        <i class="bi bi-send" aria-hidden="true"></i> {{ 'Send to the buyer'|trans }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <template data-bo-quote-negotiation-target="lineTemplate">
+        <tr data-testid="quote-added-line">
+            <td>
+                <input type="hidden" data-field="item">
+                <input type="hidden" data-field="pse">
+                <div class="fw-semibold" data-slot="title"></div>
+                <div class="small text-muted" data-slot="detail"></div>
+            </td>
+            <td class="text-end" dir="ltr" data-slot="catalog-price"></td>
+            <td class="text-end" style="max-width: 10rem;">
+                <label class="visually-hidden" data-slot="price-label">{{ 'Proposed price without taxes'|trans }}</label>
+                <input type="text" inputmode="decimal" class="form-control form-control-sm text-end" data-field="price" data-testid="quote-line-price-input">
+            </td>
+            <td class="text-end" style="max-width: 8rem;">
+                <label class="visually-hidden" data-slot="quantity-label">{{ 'Proposed quantity'|trans }}</label>
+                <input type="text" inputmode="decimal" class="form-control form-control-sm text-end" value="1" data-field="quantity" data-testid="quote-line-quantity-input">
+            </td>
+            {% if n.has_counter_offer %}
+                <td class="text-end">-</td>
+                <td class="text-end">-</td>
+            {% endif %}
+            <td class="text-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" data-action="bo-quote-negotiation#removeLine" aria-label="{{ 'Remove this line'|trans }}">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                </button>
+            </td>
+        </tr>
+    </template>
+
+    <template data-bo-quote-negotiation-target="resultTemplate">
+        <li class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2">
+            <span>
+                <span class="fw-semibold" data-slot="title"></span>
+                <span class="small text-muted d-block" data-slot="detail"></span>
+            </span>
+            <span class="d-flex align-items-center gap-2 flex-shrink-0">
+                <span class="small" dir="ltr" data-slot="price"></span>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-action="bo-quote-negotiation#addProduct">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add'|trans }}
+                </button>
+            </span>
+        </li>
+    </template>
+</div>

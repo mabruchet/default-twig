@@ -1,0 +1,7 @@
+<form method="post" action="{{ path('admin.quote.resume', { id: quote.id, number: number }) }}" class="m-0 d-inline" data-testid="{{ testid }}-form">
+    <input type="hidden" name="_token" value="{{ assignToken() }}">
+    <button type="submit" class="btn {{ size|default('btn-sm') }} {{ variant|default('btn-outline-primary') }}" data-testid="{{ testid }}">
+        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+        {% if new_revision|default(false) %}{{ 'New revision'|trans }}{% else %}{{ 'Use as the base of a new revision'|trans }}{% endif %}
+    </button>
+</form>

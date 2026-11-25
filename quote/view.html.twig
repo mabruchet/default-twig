@@ -1,0 +1,259 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Quote'|trans }} {{ quote.ref }}{% endblock %}
+{% block body_testid %}quote-view{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.quote.list') }}">{{ 'Quotes'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ quote.ref }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="quote-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-3">
+            <h1 class="h3 mb-0">
+                {{ 'Quote'|trans }} {{ quote.ref }}
+                <span class="badge text-bg-{{ state_variant }} align-middle" data-testid="quote-state" data-state="{{ state }}">{{ state_label }}</span>
+            </h1>
+            <div class="d-flex flex-wrap gap-2" data-testid="quote-actions">
+                {% block negotiate_button %}
+                    {% if can_resume %}
+                        <form method="post" action="{{ path('admin.quote.resume', { id: quote.id, number: current_revision_number }) }}" class="m-0" data-testid="quote-negotiate-form">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <button type="submit" class="btn btn-primary" data-testid="quote-negotiate">
+                                <i class="bi bi-pencil-square" aria-hidden="true"></i> {{ 'Price the quote'|trans }}
+                            </button>
+                        </form>
+                    {% elseif can_negotiate %}
+                        <a href="{{ path('admin.quote.edit', { id: quote.id }) }}" class="btn btn-primary" data-testid="quote-negotiate">
+                            <i class="bi bi-pencil-square" aria-hidden="true"></i> {{ 'Price the quote'|trans }}
+                        </a>
+                    {% endif %}
+                {% endblock %}
+                {% if can_remind %}
+                    <form method="post" action="{{ path('admin.quote.remind', { id: quote.id }) }}" class="m-0" data-testid="quote-remind-form">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <button type="submit" class="btn btn-outline-secondary" data-testid="quote-remind">
+                            <i class="bi bi-envelope-arrow-up" aria-hidden="true"></i> {{ 'Remind the buyer'|trans }}
+                        </button>
+                    </form>
+                {% endif %}
+                {% if can_duplicate %}
+                    <form method="post" action="{{ path('admin.quote.duplicate', { id: quote.id }) }}" class="m-0" data-testid="quote-duplicate-form">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <button type="submit" class="btn btn-outline-secondary" data-testid="quote-duplicate">
+                            <i class="bi bi-files" aria-hidden="true"></i> {{ 'Duplicate'|trans }}
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if revision_is_earlier %}
+            <div class="alert alert-info d-flex flex-wrap gap-2 justify-content-between align-items-center" data-testid="quote-earlier-revision">
+                <span>{{ 'You are reading revision %number%, as it was sent. It cannot be changed.'|trans({ '%number%': revision.number }) }}</span>
+                <span class="d-flex flex-wrap gap-2">
+                    <a href="{{ path('admin.quote.view', { id: quote.id }) }}" class="btn btn-sm btn-outline-secondary" data-testid="quote-earlier-revision-back">{{ 'Back to the current revision'|trans }}</a>
+                    {% if can_resume %}
+                        {{ include('@BackOfficeDefaultTwig/quote/_resume_form.html.twig', { number: revision.number, label: 'Use as the base of a new revision', testid: 'quote-resume' }) }}
+                    {% endif %}
+                </span>
+            </div>
+        {% endif %}
+
+        {% if can_extend %}
+            <form method="post" action="{{ path('admin.quote.extend', { id: quote.id }) }}" class="card card-body mb-3" data-testid="quote-extend-form">
+                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                <div class="row g-2 align-items-end">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <label class="form-label" for="quote-extend-valid-until">{{ 'Extend the validity until'|trans }}</label>
+                        <input type="date" name="valid_until" id="quote-extend-valid-until" class="form-control" value="{{ extend_from }}" min="{{ extend_from }}" required>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-outline-primary" data-testid="quote-extend">{{ 'Extend'|trans }}</button>
+                    </div>
+                </div>
+                {% if state == 'expired' %}
+                    <p class="form-text mb-0 mt-2">{{ 'The validity is over. Extending it puts the quote back to the buyer.'|trans }}</p>
+                {% endif %}
+            </form>
+        {% endif %}
+
+        <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+                <div class="card h-100" data-testid="quote-header">
+                    <div class="card-header">{{ 'Quote'|trans }}</div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">{{ 'Customer'|trans }}</dt>
+                            <dd class="col-sm-8" data-testid="quote-customer">
+                                {% if customer %}
+                                    {% if customer.url %}<a href="{{ customer.url }}">{{ customer.name }}</a>{% else %}{{ customer.name }}{% endif %}
+                                    <div class="text-muted small">{{ customer.email }}</div>
+                                {% else %}-{% endif %}
+                            </dd>
+                            <dt class="col-sm-4">{{ 'Company'|trans }}</dt>
+                            <dd class="col-sm-8" data-testid="quote-company">
+                                {% if company %}
+                                    {% if company.url %}<a href="{{ company.url }}">{{ company.name }}</a>{% else %}{{ company.name }}{% endif %}
+                                {% else %}-{% endif %}
+                            </dd>
+                            <dt class="col-sm-4">{{ 'Valid until'|trans }}</dt>
+                            <dd class="col-sm-8" data-testid="quote-valid-until">{{ valid_until ? valid_until|format_date('short') : '-' }}</dd>
+                            <dt class="col-sm-4">{{ 'Needed by'|trans }}</dt>
+                            <dd class="col-sm-8">{{ quote.neededBy ? quote.neededBy|format_date('short') : '-' }}</dd>
+                            <dt class="col-sm-4">{{ 'Created on'|trans }}</dt>
+                            <dd class="col-sm-8">{{ quote.createdAt ? quote.createdAt|format_datetime('short', 'short') : '-' }}</dd>
+                            <dt class="col-sm-4">{{ 'Last sent on'|trans }}</dt>
+                            <dd class="col-sm-8">{{ quote.sentAt ? quote.sentAt|format_datetime('short', 'short') : '-' }}</dd>
+                            <dt class="col-sm-4">{{ 'Last reminder'|trans }}</dt>
+                            <dd class="col-sm-8" data-testid="quote-reminded-at">{{ quote.remindedAt ? quote.remindedAt|format_datetime('short', 'short') : '-' }}</dd>
+                            <dt class="col-sm-4">{{ 'Revisions'|trans }}</dt>
+                            <dd class="col-sm-8" data-testid="quote-revisions">
+                                {{ revision_count }}
+                                {% if has_pending_draft %}<span class="badge text-bg-secondary">{{ 'A revision is being written'|trans }}</span>{% endif %}
+                            </dd>
+                            {% if order %}
+                                <dt class="col-sm-4">{{ 'Order'|trans }}</dt>
+                                <dd class="col-sm-8" data-testid="quote-order">
+                                    {% if order.url %}<a href="{{ order.url }}">{{ order.ref }}</a>{% else %}{{ order.ref }}{% endif %}
+                                </dd>
+                            {% endif %}
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card h-100" data-testid="quote-addresses">
+                    <div class="card-header">{{ 'Addresses'|trans }}</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-6" data-testid="quote-invoice-address">
+                                <h2 class="h6">{{ 'Invoice address'|trans }}</h2>
+                                {% if invoice_address %}
+                                    <address class="mb-0">{% for line in invoice_address %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</address>
+                                {% else %}<span class="text-muted">-</span>{% endif %}
+                            </div>
+                            <div class="col-sm-6" data-testid="quote-delivery-address">
+                                <h2 class="h6">{{ 'Delivery address'|trans }}</h2>
+                                {% if delivery_address %}
+                                    <address class="mb-0">{% for line in delivery_address %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</address>
+                                {% else %}<span class="text-muted">-</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if quote.buyerComment %}
+            <div class="card mb-3" data-testid="quote-buyer-comment">
+                <div class="card-header">{{ 'Comment of the buyer'|trans }}</div>
+                <div class="card-body">{{ quote.buyerComment|nl2br }}</div>
+            </div>
+        {% endif %}
+        {% if quote.couponDropped %}
+            <p class="alert alert-info" data-testid="quote-coupon-dropped">{{ 'The cart this quote was requested from carried a coupon. The coupon is not part of the quote.'|trans }}</p>
+        {% endif %}
+
+        {% set tab = tab|default('lines') %}
+        <ul class="nav nav-tabs mb-3" data-testid="quote-tabs">
+            {% for name, label in { lines: 'Revision'|trans, history: 'History'|trans } %}
+                <li class="nav-item">
+                    <a class="nav-link{{ tab == name ? ' active' : '' }}" href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge({ tab: name })) }}"{% if tab == name %} aria-current="page"{% endif %} data-testid="quote-tab-{{ name }}">{{ label }}{% if name == 'history' %} <span class="badge text-bg-light border">{{ revision_count }}</span>{% endif %}</a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if tab == 'history' %}
+            {{ include('@BackOfficeDefaultTwig/quote/_history.html.twig') }}
+        {% else %}
+            {% block quote_lines %}
+                <div class="card mb-3" data-testid="quote-lines">
+                    <div class="card-header">
+                        {{ 'Lines of the revision'|trans }}
+                        {% if revision %}<span class="badge text-bg-light border" data-testid="quote-revision-number">{{ revision.number }}</span>{% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if lines %}
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">{{ 'Product'|trans }}</th>
+                                            <th scope="col" class="text-end">{{ 'Quantity'|trans }}</th>
+                                            <th scope="col" class="text-end">{{ 'Catalogue price'|trans }}</th>
+                                            <th scope="col" class="text-end">{{ 'Proposed price'|trans }}</th>
+                                            <th scope="col" class="text-end">{{ 'Total without taxes'|trans }}</th>
+                                            <th scope="col">{{ 'Requested by the buyer'|trans }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for line in lines %}
+                                            <tr data-testid="quote-line-{{ line.id }}">
+                                                <td>
+                                                    {{ line.title }}
+                                                    <div class="text-muted small">{{ line.ref }}</div>
+                                                    {% if line.unavailable %}<span class="badge text-bg-warning">{{ 'No longer in the catalog'|trans }}</span>{% endif %}
+                                                </td>
+                                                <td class="text-end" data-testid="quote-line-quantity">{{ line.quantity }}</td>
+                                                <td class="text-end" dir="ltr" data-testid="quote-line-catalog-price">{{ line.catalog_price }}</td>
+                                                <td class="text-end{{ line.discounted ? ' fw-semibold' : '' }}" dir="ltr" data-testid="quote-line-price">{{ line.price }}</td>
+                                                <td class="text-end" dir="ltr">{{ line.line_total }}</td>
+                                                <td data-testid="quote-line-request">
+                                                    {% if line.request %}
+                                                        {% if line.request.quantity is not null %}<div>{{ 'Quantity'|trans }}: {{ line.request.quantity }}</div>{% endif %}
+                                                        {% if line.request.price is not null %}<div dir="ltr">{{ 'Price'|trans }}: {{ line.request.price }}</div>{% endif %}
+                                                    {% else %}<span class="text-muted">-</span>{% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0" data-testid="quote-lines-empty">{{ 'This revision has no line yet.'|trans }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if totals and lines %}
+                    <div class="card mb-3" data-testid="quote-totals">
+                        <div class="card-body">
+                            <dl class="row mb-0 justify-content-end text-end">
+                                <dt class="col-8 col-md-4 fw-normal">{{ 'Lines without taxes'|trans }}</dt>
+                                <dd class="col-4 col-md-2" dir="ltr" data-testid="quote-total-items">{{ totals.items_untaxed }}</dd>
+                                <dt class="col-8 col-md-4 fw-normal">{{ 'Postage without taxes'|trans }}</dt>
+                                <dd class="col-4 col-md-2" dir="ltr" data-testid="quote-total-postage">{{ totals.postage_untaxed }}</dd>
+                                <dt class="col-8 col-md-4 fw-normal">{{ 'Discount with taxes'|trans }}</dt>
+                                <dd class="col-4 col-md-2" dir="ltr" data-testid="quote-total-discount">{{ totals.discount }}</dd>
+                                <dt class="col-8 col-md-4 fw-normal">{{ 'Total without taxes'|trans }}</dt>
+                                <dd class="col-4 col-md-2" dir="ltr" data-testid="quote-total-untaxed">{{ totals.total_untaxed }}</dd>
+                                <dt class="col-8 col-md-4">{{ 'Total with taxes'|trans }}</dt>
+                                <dd class="col-4 col-md-2 fw-semibold" dir="ltr" data-testid="quote-total-taxed">{{ totals.total_taxed }}</dd>
+                            </dl>
+                            {% if reverse_charge %}
+                                <p class="text-end text-muted small mb-0 mt-2" data-testid="quote-reverse-charge">{{ 'Reverse charge: the buyer accounts for the VAT.'|trans }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endblock %}
+
+            {% block quote_note %}
+                {% if revision and revision.merchantNote %}
+                    <div class="card mb-3" data-testid="quote-merchant-note">
+                        <div class="card-header">{{ 'Note of the shop'|trans }}</div>
+                        <div class="card-body">{{ revision.merchantNote|nl2br }}</div>
+                    </div>
+                {% endif %}
+            {% endblock %}
+
+            {% block quote_negotiation %}{% endblock %}
+        {% endif %}
+    </div>
+{% endblock %}
