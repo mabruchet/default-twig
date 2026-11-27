@@ -25,7 +25,9 @@
         "twbs/bootstrap-icons": "^1.13"
     },
     "conflict": {
-        "thelia/thelia-skeleton": "<3.2"
+        "symfony/ux-icons": "<2.36.3 || >=3.0,<3.8.1",
+        "thelia/thelia-skeleton": "<3.2",
+        "twig/twig": "<3.31.1"
     },
     "autoload": {
         "psr-4": {
